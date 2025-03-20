@@ -11,7 +11,6 @@ from app.views.register_view import RegisterView
 from app.views.dashboard_view import DashboardView
 from app.views.accounts_view import AccountsView
 from app.views.transactions_view import TransactionsView
-from app.views.categories_view import CategoriesView
 from app.views.analytics_view import AnalyticsView
 from app.views.settings_view import SettingsView
 
@@ -48,7 +47,6 @@ class MainApp(ctk.CTk):
             "dashboard": DashboardView,
             "accounts": AccountsView,
             "transactions": TransactionsView,
-            "categories": CategoriesView,
             "analytics": AnalyticsView,
             "settings": SettingsView
         }
@@ -112,7 +110,7 @@ class MainApp(ctk.CTk):
         # Create sidebar frame
         self.sidebar = ctk.CTkFrame(self, width=200, corner_radius=0)
         self.sidebar.grid(row=0, column=0, sticky="nsew")
-        self.sidebar.grid_rowconfigure(7, weight=1)  # Push logout to bottom
+        self.sidebar.grid_rowconfigure(6, weight=1)  # Push logout to bottom
         
         # App logo/title
         self.logo_label = ctk.CTkLabel(
@@ -126,11 +124,10 @@ class MainApp(ctk.CTk):
         self.dashboard_btn = self.create_nav_button("Dashboard", 1, "dashboard")
         self.accounts_btn = self.create_nav_button("Accounts", 2, "accounts")
         self.transactions_btn = self.create_nav_button("Transactions", 3, "transactions")
-        self.categories_btn = self.create_nav_button("Categories", 4, "categories")
-        self.analytics_btn = self.create_nav_button("Analytics", 5, "analytics")
+        self.analytics_btn = self.create_nav_button("Analytics", 4, "analytics")
         
         # Settings button
-        self.settings_btn = self.create_nav_button("Settings", 6, "settings")
+        self.settings_btn = self.create_nav_button("Settings", 5, "settings")
         
         # Logout button
         self.logout_btn = ctk.CTkButton(
@@ -141,7 +138,7 @@ class MainApp(ctk.CTk):
             text_color=("gray10", "#DCE4EE"),
             command=self.handle_logout
         )
-        self.logout_btn.grid(row=8, column=0, padx=20, pady=20, sticky="ew")
+        self.logout_btn.grid(row=7, column=0, padx=20, pady=20, sticky="ew")
 
     def create_nav_button(self, text, row, view_name):
         """Create a navigation button for the sidebar."""
@@ -176,7 +173,6 @@ class MainApp(ctk.CTk):
             "dashboard": self.dashboard_btn,
             "accounts": self.accounts_btn,
             "transactions": self.transactions_btn,
-            "categories": self.categories_btn,
             "analytics": self.analytics_btn,
             "settings": self.settings_btn
         }
