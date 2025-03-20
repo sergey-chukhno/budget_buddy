@@ -16,6 +16,8 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from app.models.account import Account
 from app.models.transaction import Transaction
 from app.models.category import Category
+from app.views.dialogs.add_funds_dialog import AddFundsDialog
+from app.views.dialogs.send_funds_dialog import SendFundsDialog
 
 class DashboardView(ctk.CTkFrame):
     def __init__(self, master, user):
@@ -92,8 +94,17 @@ class DashboardView(ctk.CTkFrame):
     
     def add_funds(self):
         """Open add funds dialog."""
-        print("Add funds dialog would open here")
-        # In a complete implementation, this would show the AddFundsDialog
+        dialog = AddFundsDialog(self, self.user, callback=self.refresh_dashboard)
+        dialog.wait_window()
+    
+    def refresh_dashboard(self):
+        """Refresh the dashboard content."""
+        # In a complete implementation, this would update:
+        # - Account balances
+        # - Recent transactions
+        # - Charts and graphs
+        # - Other dashboard elements
+        pass
     
     def withdraw_funds(self):
         """Open withdraw funds dialog."""
@@ -107,8 +118,8 @@ class DashboardView(ctk.CTkFrame):
     
     def send_funds(self):
         """Open send funds dialog."""
-        print("Send funds dialog would open here")
-        # In a complete implementation, this would show the SendFundsDialog
+        dialog = SendFundsDialog(self, self.user, callback=self.refresh_dashboard)
+        dialog.wait_window()
     
     def create_account_card(self, account):
         """Create a card for an account."""

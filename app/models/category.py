@@ -2,6 +2,18 @@ import mysql.connector
 from mysql.connector import Error
 import sys
 import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+
+# Database configuration
+DB_CONFIG = {
+    'host': os.getenv('DB_HOST', 'localhost'),
+    'user': os.getenv('DB_USER', 'root'),
+    'password': os.getenv('DB_PASSWORD', ''),
+    'database': os.getenv('DB_NAME', 'billionnaires_budget_buddy')
+}
 
 # Add the parent directory to the path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -355,4 +367,91 @@ class Category:
         finally:
             if connection.is_connected():
                 cursor.close()
-                connection.close() 
+                connection.close()
+
+    @staticmethod
+    def get_categories_by_type(user_id, category_type):
+        """Get all categories of a specific type for a user."""
+        connection = get_connection()
+        if not connection:
+            return []
+
+        try:
+            cursor = connection.cursor(dictionary=True)
+            
+            # Convert category type string to boolean
+            is_expense = category_type.lower() == "expense"
+            
+            query = """
+                SELECT id, category_name, is_expense, icon, color, parent_category_id
+                FROM transaction_categories
+                WHERE is_expense = %s
+                ORDER BY category_name
+            """
+            cursor.execute(query, (is_expense,))
+            
+            categories = []
+            for row in cursor.fetchall():
+                categories.append(Category(
+                    id=row['id'],
+                    category_name=row['category_name'],
+                    is_expense=row['is_expense'],
+                    icon=row['icon'],
+                    color=row['color'],
+                    parent_category_id=row['parent_category_id']
+                ))
+            
+            return categories
+            
+        except Error as e:
+            print(f"Error fetching categories: {e}")
+            return []
+        finally:
+            if connection.is_connected():
+                cursor.close()
+                connection.close()
+
+    @staticmethod
+    def create_category(name, type, user_id):
+        """Create a new category."""
+        try:
+            conn = mysql.connector.connect(**DB_CONFIG)
+            cursor = conn.cursor()
+            
+            query = """
+                INSERT INTO categories (name, type, user_id)
+                VALUES (%s, %s, %s)
+            """
+            cursor.execute(query, (name, type, user_id))
+            conn.commit()
+            
+            return True, "Category created successfully"
+            
+        except mysql.connector.Error as err:
+            return False, f"Error creating category: {err}"
+        finally:
+            if 'cursor' in locals():
+                cursor.close()
+            if 'conn' in locals():
+                conn.close()
+
+    @staticmethod
+    def delete_category(category_id):
+        """Delete a category."""
+        try:
+            conn = mysql.connector.connect(**DB_CONFIG)
+            cursor = conn.cursor()
+            
+            query = "DELETE FROM categories WHERE id = %s"
+            cursor.execute(query, (category_id,))
+            conn.commit()
+            
+            return True, "Category deleted successfully"
+            
+        except mysql.connector.Error as err:
+            return False, f"Error deleting category: {err}"
+        finally:
+            if 'cursor' in locals():
+                cursor.close()
+            if 'conn' in locals():
+                conn.close() 

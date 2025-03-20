@@ -1,230 +1,310 @@
 import customtkinter as ctk
+from decimal import Decimal
 import sys
 import os
-from decimal import Decimal
 
 # Add the parent directory to the path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 # Import models
 from app.models.account import Account
+from app.models.transaction import Transaction
 from app.models.category import Category
 
 class AddFundsDialog(ctk.CTkToplevel):
-    def __init__(self, master, user):
-        super().__init__(master)
-        self.user = user
+    def __init__(self, parent, user, callback=None):
+        super().__init__(parent)
         
-        # Configure the dialog
+        self.parent = parent
+        self.user = user
+        self.callback = callback
+        
+        # Set up the dialog window
         self.title("Add Funds")
-        self.geometry("500x550")
+        self.geometry("400x600")  # Increased height to show all content
         self.resizable(False, False)
         
         # Make dialog modal
-        self.transient(master)
+        self.transient(parent)
         self.grab_set()
         
-        # Create main frame
-        self.main_frame = ctk.CTkFrame(self)
-        self.main_frame.pack(fill="both", expand=True, padx=20, pady=20)
+        # Center the window
+        self.update_idletasks()
+        width = self.winfo_width()
+        height = self.winfo_height()
+        x = (self.winfo_screenwidth() // 2) - (width // 2)
+        y = (self.winfo_screenheight() // 2) - (height // 2)
+        self.geometry(f'{width}x{height}+{x}+{y}')
         
-        # Dialog title
-        self.title_label = ctk.CTkLabel(
-            self.main_frame,
-            text="Add Funds",
-            font=ctk.CTkFont(size=24, weight="bold")
+        # Create the dialog content
+        self.create_widgets()
+        
+        # Make dialog modal and focus it
+        self.focus_set()
+        
+        # Handle window close button
+        self.protocol("WM_DELETE_WINDOW", self.close)
+    
+    def create_widgets(self):
+        """Create the dialog widgets."""
+        # Main container
+        container = ctk.CTkFrame(self)
+        container.pack(fill="both", expand=True, padx=20, pady=20)
+        
+        # Title
+        title_label = ctk.CTkLabel(
+            container,
+            text="Add Funds to Account",
+            font=ctk.CTkFont(size=20, weight="bold")
         )
-        self.title_label.pack(pady=(0, 20))
+        title_label.pack(pady=(0, 20))
         
-        # Account selection section
-        self.account_frame = ctk.CTkFrame(self.main_frame)
-        self.account_frame.pack(fill="x", padx=10, pady=10)
+        # Account selection
+        account_frame = ctk.CTkFrame(container, fg_color="transparent")
+        account_frame.pack(fill="x", pady=(0, 10))
         
-        self.account_label = ctk.CTkLabel(
-            self.account_frame,
-            text="Account",
-            font=ctk.CTkFont(size=14, weight="bold")
+        account_label = ctk.CTkLabel(
+            account_frame,
+            text="Select Account:",
+            font=ctk.CTkFont(size=14)
         )
-        self.account_label.pack(anchor="w", padx=10, pady=(10, 5))
+        account_label.pack(anchor="w")
         
-        # Get user accounts
+        # Get user's accounts
         self.accounts = Account.get_accounts_for_user(self.user.id)
+        self.account_var = ctk.StringVar()
         
-        if not self.accounts:
-            self.account_options = ["No accounts available"]
-            self.selected_account = None
-        else:
-            self.account_options = [f"{account.account_name} (${account.balance:,.2f})" for account in self.accounts]
-            self.selected_account = self.accounts[0] if self.accounts else None
-        
-        self.account_dropdown = ctk.CTkOptionMenu(
-            self.account_frame,
-            values=self.account_options,
-            command=self.on_account_selected,
+        self.account_menu = ctk.CTkOptionMenu(
+            account_frame,
+            values=[f"{acc.account_name} (${acc.balance:,.2f})" for acc in self.accounts],
+            variable=self.account_var,
             width=300
         )
-        self.account_dropdown.pack(anchor="w", padx=10, pady=(0, 10))
+        self.account_menu.pack(pady=(5, 0))
         
-        # Amount section
-        self.amount_frame = ctk.CTkFrame(self.main_frame)
-        self.amount_frame.pack(fill="x", padx=10, pady=10)
+        # Amount input
+        amount_frame = ctk.CTkFrame(container, fg_color="transparent")
+        amount_frame.pack(fill="x", pady=(0, 10))
         
-        self.amount_label = ctk.CTkLabel(
-            self.amount_frame,
-            text="Amount",
-            font=ctk.CTkFont(size=14, weight="bold")
+        amount_label = ctk.CTkLabel(
+            amount_frame,
+            text="Amount:",
+            font=ctk.CTkFont(size=14)
         )
-        self.amount_label.pack(anchor="w", padx=10, pady=(10, 5))
+        amount_label.pack(anchor="w")
         
         self.amount_entry = ctk.CTkEntry(
-            self.amount_frame,
+            amount_frame,
             placeholder_text="Enter amount",
             width=300
         )
-        self.amount_entry.pack(anchor="w", padx=10, pady=(0, 10))
+        self.amount_entry.pack(pady=(5, 0))
         
-        # Category section
-        self.category_frame = ctk.CTkFrame(self.main_frame)
-        self.category_frame.pack(fill="x", padx=10, pady=10)
+        # Category selection
+        category_frame = ctk.CTkFrame(container, fg_color="transparent")
+        category_frame.pack(fill="x", pady=(0, 10))
         
-        self.category_label = ctk.CTkLabel(
-            self.category_frame,
-            text="Category",
-            font=ctk.CTkFont(size=14, weight="bold")
+        category_label = ctk.CTkLabel(
+            category_frame,
+            text="Select Category:",
+            font=ctk.CTkFont(size=14)
         )
-        self.category_label.pack(anchor="w", padx=10, pady=(10, 5))
+        category_label.pack(anchor="w")
         
         # Get income categories
-        self.categories = Category.get_all_categories(is_expense=False)
+        self.categories = Category.get_categories_by_type(self.user.id, "income")
+        self.category_var = ctk.StringVar()
         
-        if not self.categories:
-            self.category_options = ["No categories available"]
-            self.selected_category = None
-        else:
-            self.category_options = [category.category_name for category in self.categories]
-            self.selected_category = self.categories[0] if self.categories else None
-        
-        self.category_dropdown = ctk.CTkOptionMenu(
-            self.category_frame,
-            values=self.category_options,
-            command=self.on_category_selected,
+        self.category_menu = ctk.CTkOptionMenu(
+            category_frame,
+            values=[cat.category_name for cat in self.categories],
+            variable=self.category_var,
             width=300
         )
-        self.category_dropdown.pack(anchor="w", padx=10, pady=(0, 10))
+        self.category_menu.pack(pady=(5, 0))
         
-        # Description section
-        self.description_frame = ctk.CTkFrame(self.main_frame)
-        self.description_frame.pack(fill="x", padx=10, pady=10)
+        # Description input
+        description_frame = ctk.CTkFrame(container, fg_color="transparent")
+        description_frame.pack(fill="x", pady=(0, 10))
         
-        self.description_label = ctk.CTkLabel(
-            self.description_frame,
-            text="Description",
-            font=ctk.CTkFont(size=14, weight="bold")
+        description_label = ctk.CTkLabel(
+            description_frame,
+            text="Description (optional):",
+            font=ctk.CTkFont(size=14)
         )
-        self.description_label.pack(anchor="w", padx=10, pady=(10, 5))
+        description_label.pack(anchor="w")
         
         self.description_entry = ctk.CTkEntry(
-            self.description_frame,
-            placeholder_text="Enter description (optional)",
+            description_frame,
+            placeholder_text="Enter description",
             width=300
         )
-        self.description_entry.pack(anchor="w", padx=10, pady=(0, 10))
+        self.description_entry.pack(pady=(5, 0))
         
-        # Error message label
-        self.error_label = ctk.CTkLabel(
-            self.main_frame,
-            text="",
-            text_color="red",
-            font=ctk.CTkFont(size=12)
-        )
-        self.error_label.pack(pady=(5, 10))
+        # Buttons frame
+        buttons_frame = ctk.CTkFrame(container, fg_color="transparent")
+        buttons_frame.pack(fill="x", pady=(20, 0))
         
-        # Buttons
-        self.buttons_frame = ctk.CTkFrame(self.main_frame, fg_color="transparent")
-        self.buttons_frame.pack(fill="x", padx=10, pady=(10, 0))
-        
-        self.cancel_button = ctk.CTkButton(
-            self.buttons_frame,
+        # Cancel button
+        cancel_btn = ctk.CTkButton(
+            buttons_frame,
             text="Cancel",
-            command=self.destroy,
-            fg_color="transparent",
-            border_width=1,
-            text_color=("gray10", "gray90")
+            width=100,
+            command=self.close
         )
-        self.cancel_button.pack(side="left", padx=10)
+        cancel_btn.pack(side="left", padx=10)
         
-        self.add_button = ctk.CTkButton(
-            self.buttons_frame,
-            text="Add Funds",
-            command=self.add_funds,
-            fg_color="#4CAF50",
-            hover_color="#388E3C"
+        # Add button
+        add_btn = ctk.CTkButton(
+            buttons_frame,
+            text="Add",
+            width=100,
+            command=self.add_funds
         )
-        self.add_button.pack(side="right", padx=10)
-    
-    def on_account_selected(self, selection):
-        """Handle account selection."""
-        if not self.accounts:
-            return
-            
-        for account in self.accounts:
-            if f"{account.account_name} (${account.balance:,.2f})" == selection:
-                self.selected_account = account
-                break
-    
-    def on_category_selected(self, selection):
-        """Handle category selection."""
-        if not self.categories:
-            return
-            
-        for category in self.categories:
-            if category.category_name == selection:
-                self.selected_category = category
-                break
-    
-    def validate_amount(self, amount_str):
-        """Validate the amount input."""
-        try:
-            amount = Decimal(amount_str)
-            if amount <= 0:
-                return False, "Amount must be positive"
-            return True, amount
-        except (ValueError, InvalidOperation):
-            return False, "Please enter a valid amount"
+        add_btn.pack(side="right", padx=10)
     
     def add_funds(self):
-        """Process adding funds to the account."""
-        # Check if account is selected
-        if not self.selected_account:
-            self.error_label.configure(text="Please select an account")
-            return
+        """Add funds to the selected account."""
+        try:
+            # Get selected account
+            account_index = self.account_menu.current()
+            if account_index < 0:
+                self.show_error("Please select an account")
+                return
             
-        # Check if category is selected
-        if not self.selected_category:
-            self.error_label.configure(text="Please select a category")
-            return
+            account = self.accounts[account_index]
             
-        # Validate amount
-        amount_str = self.amount_entry.get()
-        valid, result = self.validate_amount(amount_str)
-        if not valid:
-            self.error_label.configure(text=result)
-            return
+            # Get amount
+            try:
+                amount = Decimal(self.amount_entry.get())
+                if amount <= 0:
+                    self.show_error("Amount must be greater than 0")
+                    return
+            except (ValueError, TypeError):
+                self.show_error("Please enter a valid amount")
+                return
             
-        amount = result
+            # Get selected category
+            selected_category_index = self.category_menu.current()
+            if selected_category_index < 0:
+                self.show_error("Please select a category")
+                return
+            
+            category = self.categories[selected_category_index]
+            
+            # Get description
+            description = self.description_entry.get().strip()
+            
+            # Create transaction and update account balance
+            success, message = Transaction.create_transaction(
+                user_id=self.user.id,
+                account_id=account.id,
+                category_id=category.id,
+                amount=amount,
+                transaction_type="deposit",
+                description=description
+            )
+            
+            if success:
+                # Show success message
+                self.show_success("Funds added successfully!")
+                # Call the callback to refresh the accounts list
+                if self.callback:
+                    self.callback()
+                # Close the dialog after a delay
+                self.after(2000, self.close)
+            else:
+                self.show_error(message)
+                
+        except Exception as e:
+            self.show_error(f"An error occurred: {str(e)}")
+    
+    def show_error(self, message):
+        """Show an error message."""
+        error_dialog = ctk.CTkToplevel(self)
+        error_dialog.title("Error")
+        error_dialog.geometry("300x150")
+        error_dialog.resizable(False, False)
+        error_dialog.transient(self)
+        error_dialog.grab_set()
         
-        # Get description
-        description = self.description_entry.get() or "Deposit"
+        # Center the dialog
+        error_dialog.update_idletasks()
+        width = error_dialog.winfo_width()
+        height = error_dialog.winfo_height()
+        x = (self.winfo_screenwidth() // 2) - (width // 2)
+        y = (self.winfo_screenheight() // 2) - (height // 2)
+        error_dialog.geometry(f'{width}x{height}+{x}+{y}')
         
-        # Add funds to the account
-        success, message = self.selected_account.add_funds(
-            float(amount),
-            self.selected_category.id,
-            description,
-            self.user.id
+        # Error icon
+        icon_label = ctk.CTkLabel(
+            error_dialog,
+            text="✗",
+            font=ctk.CTkFont(size=48, weight="bold"),
+            text_color="red"
         )
+        icon_label.pack(pady=(20, 10))
         
-        if success:
-            self.destroy()  # Close the dialog on success
-        else:
-            self.error_label.configure(text=message) 
+        # Error message
+        msg_label = ctk.CTkLabel(
+            error_dialog,
+            text=message,
+            wraplength=250
+        )
+        msg_label.pack(pady=(0, 20))
+        
+        # OK button
+        ok_btn = ctk.CTkButton(
+            error_dialog,
+            text="OK",
+            width=100,
+            command=error_dialog.destroy
+        )
+        ok_btn.pack(pady=(0, 20))
+    
+    def show_success(self, message):
+        """Show a success message."""
+        success_dialog = ctk.CTkToplevel(self)
+        success_dialog.title("Success")
+        success_dialog.geometry("300x150")
+        success_dialog.resizable(False, False)
+        success_dialog.transient(self)
+        success_dialog.grab_set()
+        
+        # Center the dialog
+        success_dialog.update_idletasks()
+        width = success_dialog.winfo_width()
+        height = success_dialog.winfo_height()
+        x = (self.winfo_screenwidth() // 2) - (width // 2)
+        y = (self.winfo_screenheight() // 2) - (height // 2)
+        success_dialog.geometry(f'{width}x{height}+{x}+{y}')
+        
+        # Success icon
+        icon_label = ctk.CTkLabel(
+            success_dialog,
+            text="✓",
+            font=ctk.CTkFont(size=48, weight="bold"),
+            text_color="green"
+        )
+        icon_label.pack(pady=(20, 10))
+        
+        # Success message
+        msg_label = ctk.CTkLabel(
+            success_dialog,
+            text=message,
+            wraplength=250
+        )
+        msg_label.pack(pady=(0, 20))
+        
+        # OK button
+        ok_btn = ctk.CTkButton(
+            success_dialog,
+            text="OK",
+            width=100,
+            command=success_dialog.destroy
+        )
+        ok_btn.pack(pady=(0, 20))
+    
+    def close(self):
+        """Close the dialog."""
+        self.destroy() 
