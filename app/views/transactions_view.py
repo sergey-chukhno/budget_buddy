@@ -77,9 +77,227 @@ class TransactionsView(ctk.CTkFrame):
         self.refresh_transactions()
     
     def export_report(self):
-        """Generate and export a transactions report."""
-        # In a complete implementation, this would generate a PDF or CSV report
-        print("Export report functionality would be implemented here")
+        """Generate and export a transactions report as PDF."""
+        import os
+        from datetime import datetime
+        from reportlab.lib import colors
+        from reportlab.lib.pagesizes import letter, landscape
+        from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+        from reportlab.lib.styles import getSampleStyleSheet
+        
+        # Create reports directory if it doesn't exist
+        reports_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "resources", "reports")
+        os.makedirs(reports_dir, exist_ok=True)
+        
+        # Generate a unique filename with timestamp
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = os.path.join(reports_dir, f"transactions_report_{timestamp}.pdf")
+        
+        # Prepare document
+        doc = SimpleDocTemplate(filename, pagesize=landscape(letter))
+        elements = []
+        
+        # Add title and timestamp
+        styles = getSampleStyleSheet()
+        title_style = styles['Heading1']
+        title = Paragraph(f"Transactions Report", title_style)
+        elements.append(title)
+        
+        # Add date
+        date_style = styles['Normal']
+        date_string = datetime.now().strftime("%B %d, %Y at %H:%M:%S")
+        date = Paragraph(f"Generated on {date_string}", date_style)
+        elements.append(date)
+        elements.append(Spacer(1, 12))
+        
+        # Add user info
+        user_info = Paragraph(f"User: {self.user.name}", styles['Normal'])
+        elements.append(user_info)
+        elements.append(Spacer(1, 20))
+        
+        # Fetch transactions with current filters
+        # Get filter parameters similar to refresh_transactions method
+        start_date = self.start_date_var.get() if self.start_date_var.get() else None
+        end_date = self.end_date_var.get() if self.end_date_var.get() else None
+        
+        # Get account ID if a specific account is selected
+        account_id = None
+        if self.account_var.get() != "All Accounts":
+            accounts = Account.get_accounts_for_user(self.user.id)
+            for account in accounts:
+                if account.account_name == self.account_var.get():
+                    account_id = account.id
+                    break
+        
+        # Get category ID if a specific category is selected
+        category_id = None
+        if self.category_var.get() != "All Categories":
+            all_categories = Category.get_categories_by_type(self.user.id, "income") + Category.get_categories_by_type(self.user.id, "expense")
+            for category in all_categories:
+                if category.category_name == self.category_var.get():
+                    category_id = category.id
+                    break
+        
+        # Get transaction type
+        transaction_type = None
+        if self.transaction_type_var.get() != "All Types":
+            type_map = {
+                "Deposit": "deposit",
+                "Withdrawal": "withdrawal",
+                "Transfer": "transfer",
+                "External Transfer": "external_transfer"
+            }
+            transaction_type = type_map.get(self.transaction_type_var.get())
+        
+        # Amount range
+        min_amount = self.min_amount_var.get() if self.min_amount_var.get() else None
+        max_amount = self.max_amount_var.get() if self.max_amount_var.get() else None
+        
+        try:
+            if min_amount:
+                min_amount = float(min_amount)
+            if max_amount:
+                max_amount = float(max_amount)
+        except ValueError:
+            min_amount = None
+            max_amount = None
+        
+        # Search term
+        search_term = self.search_var.get() if self.search_var.get() else None
+        
+        # Get transactions for the report (no limit/offset to include all)
+        transactions = Transaction.get_transactions_for_user(
+            self.user.id,
+            start_date=start_date,
+            end_date=end_date,
+            category_id=category_id,
+            search_term=search_term,
+            transaction_type=transaction_type,
+            min_amount=min_amount,
+            max_amount=max_amount,
+            account_id=account_id,
+            include_details=True,
+            order_by=self.sort_column,
+            order_dir=self.sort_direction
+        )
+        
+        # Add filter information to the report
+        filter_text = []
+        if self.account_var.get() != "All Accounts":
+            filter_text.append(f"Account: {self.account_var.get()}")
+        if self.category_var.get() != "All Categories":
+            filter_text.append(f"Category: {self.category_var.get()}")
+        if self.transaction_type_var.get() != "All Types":
+            filter_text.append(f"Type: {self.transaction_type_var.get()}")
+        if min_amount and max_amount:
+            filter_text.append(f"Amount Range: ${min_amount} to ${max_amount}")
+        elif min_amount:
+            filter_text.append(f"Minimum Amount: ${min_amount}")
+        elif max_amount:
+            filter_text.append(f"Maximum Amount: ${max_amount}")
+        if search_term:
+            filter_text.append(f"Search: '{search_term}'")
+        
+        if filter_text:
+            filter_info = Paragraph("Filters: " + ", ".join(filter_text), styles['Normal'])
+            elements.append(filter_info)
+            elements.append(Spacer(1, 15))
+        
+        # Create table headers
+        headers = ["Date", "Account", "Category", "Description", "Recipient", "Amount", "Type"]
+        data = [headers]
+        
+        # Add transaction data to table
+        for transaction in transactions:
+            # Format date
+            date_str = transaction.transaction_date.strftime("%Y-%m-%d %H:%M")
+            
+            # Get account and category names
+            account_name = getattr(transaction, '_account_name', 'N/A')
+            category_name = getattr(transaction, '_category_name', 'N/A')
+            
+            # Get description and format if needed
+            description = transaction.description or ""
+            if len(description) > 40:  # Keep descriptions from breaking layout
+                description = description[:40] + "..."
+            
+            # Recipient info
+            recipient = ""
+            if transaction.transaction_type == "transfer" and hasattr(transaction, '_recipient_account_name'):
+                recipient = transaction._recipient_account_name
+            elif transaction.transaction_type == "external_transfer" and transaction.external_recipient:
+                recipient = transaction.external_recipient
+            
+            # Format amount
+            amount = float(transaction.amount)
+            if transaction.transaction_type in ["withdrawal", "external_transfer", "transfer"] and transaction.account_id:
+                amount_text = f"-${amount:,.2f}"
+            else:
+                amount_text = f"${amount:,.2f}"
+            
+            # Format transaction type
+            type_map = {
+                "deposit": "Deposit",
+                "withdrawal": "Withdrawal",
+                "transfer": "Transfer",
+                "external_transfer": "External Transfer"
+            }
+            type_text = type_map.get(transaction.transaction_type, transaction.transaction_type)
+            
+            # Add row to data
+            row = [date_str, account_name, category_name, description, recipient, amount_text, type_text]
+            data.append(row)
+        
+        # Create the table
+        if len(data) > 1:  # If there are transactions
+            table = Table(data, repeatRows=1)
+            
+            # Add table styles
+            style = TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.darkblue),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, 0), 12),
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+                ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
+                ('ALIGN', (0, 1), (-1, -1), 'LEFT'),
+                ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+                ('FONTSIZE', (0, 1), (-1, -1), 10),
+                ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ])
+            
+            # Add alternating row colors
+            for i in range(1, len(data), 2):
+                style.add('BACKGROUND', (0, i), (-1, i), colors.lightgrey)
+                
+            # Style amount column based on transaction type
+            for i in range(1, len(data)):
+                if data[i][5].startswith("-"):  # If it's a withdrawal or transfer
+                    style.add('TEXTCOLOR', (5, i), (5, i), colors.red)
+                else:
+                    style.add('TEXTCOLOR', (5, i), (5, i), colors.darkgreen)
+            
+            table.setStyle(style)
+            elements.append(table)
+        else:
+            # If no transactions match the filter
+            no_data = Paragraph("No transactions found with the current filters", styles['Normal'])
+            elements.append(no_data)
+        
+        # Add report summary
+        elements.append(Spacer(1, 20))
+        summary = Paragraph(f"Total Transactions: {len(data) - 1}", styles['Normal'])
+        elements.append(summary)
+        
+        # Build PDF
+        doc.build(elements)
+        
+        # Show confirmation message
+        import tkinter.messagebox as messagebox
+        messagebox.showinfo("Export Report", f"Report exported successfully to:\n{filename}")
 
     def refresh_transactions(self):
         """Refresh the transactions table with current filters."""
