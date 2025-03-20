@@ -273,7 +273,6 @@ class MainView(ctk.CTkFrame):
         from app.views.dialogs.send_funds_dialog import SendFundsDialog
         dialog = SendFundsDialog(self, self.user, callback=self.refresh_current_view)
         dialog.wait_window()
-        self.refresh_current_view()
     
     def logout(self):
         self.logout_callback() 

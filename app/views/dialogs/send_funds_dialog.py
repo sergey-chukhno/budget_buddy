@@ -74,10 +74,26 @@ class SendFundsDialog(ctk.CTkToplevel):
         self.accounts = Account.get_accounts_for_user(self.user.id)
         self.account_var = ctk.StringVar()
         
-        # Create account dropdown values
-        account_options = [f"{acc.account_name} (${acc.balance:,.2f})" for acc in self.accounts]
-        if account_options:
-            self.account_var.set(account_options[0])
+        # Filter to only show checking accounts
+        self.checking_accounts = [acc for acc in self.accounts if acc.account_type_name == "Checking"]
+        
+        if not self.checking_accounts:
+            # Show warning if no checking accounts
+            warning_label = ctk.CTkLabel(
+                account_frame,
+                text="No checking accounts available. Please create a checking account first.",
+                text_color="red",
+                wraplength=300
+            )
+            warning_label.pack(pady=(5, 0))
+            
+            # Create empty account options
+            account_options = []
+        else:
+            # Create account dropdown values from checking accounts
+            account_options = [f"{acc.account_name} (${acc.balance:,.2f})" for acc in self.checking_accounts]
+            if account_options:
+                self.account_var.set(account_options[0])
         
         self.account_menu = ctk.CTkOptionMenu(
             account_frame,
@@ -198,6 +214,11 @@ class SendFundsDialog(ctk.CTkToplevel):
     def send_funds(self):
         """Send funds to the external recipient."""
         try:
+            # Check if there are any checking accounts
+            if not self.checking_accounts:
+                self.show_error("You need a checking account to send funds")
+                return
+                
             # Get selected account
             selected_account = self.account_var.get()
             if not selected_account:
@@ -206,7 +227,7 @@ class SendFundsDialog(ctk.CTkToplevel):
             
             # Find the account from the selection
             account = None
-            for acc in self.accounts:
+            for acc in self.checking_accounts:
                 if selected_account.startswith(acc.account_name):
                     account = acc
                     break
@@ -260,7 +281,7 @@ class SendFundsDialog(ctk.CTkToplevel):
                 account_id=account.id,
                 category_id=category.id,
                 amount=amount,
-                transaction_type="send",
+                transaction_type="external_transfer",
                 description=description,
                 external_recipient=recipient
             )
@@ -268,9 +289,11 @@ class SendFundsDialog(ctk.CTkToplevel):
             if success:
                 # Show success message
                 self.show_success("Funds sent successfully!")
+                
                 # Call the callback to refresh the accounts list
                 if self.callback:
                     self.callback()
+                    
                 # Close the dialog after a delay
                 self.after(2000, self.close)
             else:
