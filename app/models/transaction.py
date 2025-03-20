@@ -186,8 +186,9 @@ class Transaction:
 
     @staticmethod
     def get_transactions_for_user(user_id, limit=100, offset=0, start_date=None, end_date=None,
-                                  category_id=None, search_term=None, transaction_type=None,
-                                  min_amount=None, max_amount=None, account_id=None, include_details=False):
+                                 category_id=None, search_term=None, transaction_type=None,
+                                 min_amount=None, max_amount=None, account_id=None, include_details=False,
+                                 order_by=None, order_dir=None):
         """Get all transactions for a user's accounts with filtering options."""
         connection = get_connection()
         if not connection:
@@ -236,7 +237,9 @@ class Transaction:
             where_clause = f"(account_id IN ({account_placeholders}) OR recipient_account_id IN ({account_placeholders}))"
             params = account_ids + account_ids  # Duplicate for both IN clauses
             
-            # Add other filters
+            # Add filters
+            where_params = []
+            
             if start_date:
                 where_clause += " AND transaction_date >= %s"
                 params.append(start_date)
@@ -246,31 +249,47 @@ class Transaction:
                 params.append(end_date)
                 
             if category_id:
-                where_clause += " AND category_id = %s"
+                where_clause += " AND t.category_id = %s"
                 params.append(category_id)
                 
             if search_term:
-                where_clause += " AND (description LIKE %s OR external_recipient LIKE %s)"
+                where_clause += " AND (t.description LIKE %s OR t.external_recipient LIKE %s)"
                 search_pattern = f"%{search_term}%"
                 params.extend([search_pattern, search_pattern])
                 
             if transaction_type:
-                where_clause += " AND transaction_type = %s"
+                where_clause += " AND t.transaction_type = %s"
                 params.append(transaction_type)
                 
             if min_amount is not None:
-                where_clause += " AND amount >= %s"
+                where_clause += " AND t.amount >= %s"
                 params.append(min_amount)
                 
             if max_amount is not None:
-                where_clause += " AND amount <= %s"
+                where_clause += " AND t.amount <= %s"
                 params.append(max_amount)
-                
-            # Add where clause to query
+            
             query += f" WHERE {where_clause}"
                 
-            # Add ordering, limit and offset
-            query += " ORDER BY transaction_date DESC LIMIT %s OFFSET %s"
+            # Add ordering
+            if order_by:
+                valid_columns = [
+                    "id", "account_id", "category_id", "amount", 
+                    "transaction_type", "transaction_date", "created_by_user_id"
+                ]
+                if order_by in valid_columns:
+                    query += f" ORDER BY t.{order_by}"
+                    
+                    # Add direction if specified
+                    if order_dir and order_dir.upper() in ["ASC", "DESC"]:
+                        query += f" {order_dir.upper()}"
+                    else:
+                        query += " ASC"  # Default to ascending
+            else:
+                query += " ORDER BY t.transaction_date DESC"  # Default order
+                
+            # Add limit and offset
+            query += " LIMIT %s OFFSET %s"
             params.extend([limit, offset])
             
             cursor.execute(query, params)

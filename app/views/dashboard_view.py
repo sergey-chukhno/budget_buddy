@@ -77,36 +77,84 @@ class DashboardView(ctk.CTkFrame):
         # Dashboard content frame
         self.content_frame = ctk.CTkFrame(self)
         self.content_frame.grid(row=2, column=0, padx=20, pady=20, sticky="nsew")
-        self.content_frame.grid_columnconfigure((0, 1), weight=1)
-        self.content_frame.grid_rowconfigure((0, 1), weight=1)
+        self.content_frame.grid_columnconfigure(0, weight=2)
+        self.content_frame.grid_columnconfigure(1, weight=3)
+        self.content_frame.grid_rowconfigure(0, weight=1)
+        self.content_frame.grid_rowconfigure(1, weight=4)
         
-        # Placeholder for dashboard sections
-        self.placeholder = ctk.CTkLabel(
-            self.content_frame,
-            text="In a complete implementation, this dashboard would include:\n\n"
-                 "• Account summary tiles with balances\n"
-                 "• Recent transactions list\n"
-                 "• Quick expense/income summary\n"
-                 "• Upcoming bills and reminders\n"
-                 "• Financial goal progress\n\n"
-                 "With real-time updates and interactive elements.",
-            wraplength=600
+        # Create summary cards and transaction list
+        self.create_summary_cards()
+        self.create_recent_transactions()
+        
+        # Load data
+        self.refresh_dashboard()
+    
+    def create_summary_cards(self):
+        """Create summary cards for total balance and account count."""
+        summary_frame = ctk.CTkFrame(self.content_frame)
+        summary_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew", columnspan=2)
+        summary_frame.grid_columnconfigure((0, 1), weight=1)
+        
+        # Total Balance Card
+        balance_card = ctk.CTkFrame(summary_frame, corner_radius=10)
+        balance_card.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
+        
+        balance_title = ctk.CTkLabel(
+            balance_card,
+            text="Total Balance",
+            font=ctk.CTkFont(size=16, weight="bold")
         )
-        self.placeholder.pack(pady=100)
+        balance_title.pack(padx=20, pady=(20, 5))
+        
+        self.balance_value = ctk.CTkLabel(
+            balance_card,
+            text="$0.00",
+            font=ctk.CTkFont(size=24, weight="bold"),
+            text_color="#4CAF50"
+        )
+        self.balance_value.pack(padx=20, pady=(5, 20))
+        
+        # Account Count Card
+        account_card = ctk.CTkFrame(summary_frame, corner_radius=10)
+        account_card.grid(row=0, column=1, padx=10, pady=10, sticky="nsew")
+        
+        account_title = ctk.CTkLabel(
+            account_card,
+            text="Total Accounts",
+            font=ctk.CTkFont(size=16, weight="bold")
+        )
+        account_title.pack(padx=20, pady=(20, 5))
+        
+        self.account_count = ctk.CTkLabel(
+            account_card,
+            text="0",
+            font=ctk.CTkFont(size=24, weight="bold"),
+            text_color="#2196F3"
+        )
+        self.account_count.pack(padx=20, pady=(5, 20))
+    
+    def create_recent_transactions(self):
+        """Create recent transactions section."""
+        # Transactions frame
+        self.transactions_frame = ctk.CTkFrame(self.content_frame)
+        self.transactions_frame.grid(row=1, column=0, padx=10, pady=10, sticky="nsew", columnspan=2)
+        
+        # Transactions title
+        transactions_title = ctk.CTkLabel(
+            self.transactions_frame,
+            text="Recent Transactions",
+            font=ctk.CTkFont(size=18, weight="bold")
+        )
+        transactions_title.pack(anchor="w", padx=20, pady=(20, 10))
+        
+        # Transactions list container with scrollbar
+        self.transactions_list_frame = ctk.CTkScrollableFrame(self.transactions_frame, height=300)
+        self.transactions_list_frame.pack(fill="both", expand=True, padx=20, pady=(0, 20))
     
     def add_funds(self):
         """Open add funds dialog."""
         dialog = AddFundsDialog(self, self.user, callback=self.refresh_dashboard)
         dialog.wait_window()
-    
-    def refresh_dashboard(self):
-        """Refresh the dashboard content."""
-        # In a complete implementation, this would update:
-        # - Account balances
-        # - Recent transactions
-        # - Charts and graphs
-        # - Other dashboard elements
-        pass
     
     def withdraw_funds(self):
         """Open withdraw funds dialog."""
@@ -122,6 +170,138 @@ class DashboardView(ctk.CTkFrame):
         """Open send funds dialog."""
         dialog = SendFundsDialog(self, self.user, callback=self.refresh_dashboard)
         dialog.wait_window()
+    
+    def update_total_balance(self):
+        """Update the total balance display."""
+        total_balance = 0
+        accounts = Account.get_accounts_for_user(self.user.id)
+        for account in accounts:
+            total_balance += account.balance
+        
+        self.balance_value.configure(text=f"${total_balance:,.2f}")
+    
+    def update_account_count(self):
+        """Update the account count display."""
+        accounts = Account.get_accounts_for_user(self.user.id)
+        self.account_count.configure(text=str(len(accounts)))
+    
+    def update_recent_transactions(self):
+        """Update the recent transactions list."""
+        # Clear existing transactions
+        for widget in self.transactions_list_frame.winfo_children():
+            widget.destroy()
+        
+        # Get recent transactions (last 5)
+        transactions = Transaction.get_transactions_for_user(
+            self.user.id,
+            limit=5,
+            include_details=True
+        )
+        
+        if not transactions:
+            no_transactions_label = ctk.CTkLabel(
+                self.transactions_list_frame,
+                text="No transactions found",
+                font=ctk.CTkFont(size=14),
+                text_color="gray"
+            )
+            no_transactions_label.pack(pady=20)
+            return
+        
+        # Create header
+        header_frame = ctk.CTkFrame(self.transactions_list_frame, fg_color="transparent")
+        header_frame.pack(fill="x", pady=(0, 5))
+        header_frame.grid_columnconfigure((0, 1, 2, 3, 4), weight=1)
+        
+        # Header labels
+        header_labels = ["Date", "Account", "Category", "Amount", "Type"]
+        for i, label_text in enumerate(header_labels):
+            header_label = ctk.CTkLabel(
+                header_frame,
+                text=label_text,
+                font=ctk.CTkFont(size=12, weight="bold")
+            )
+            header_label.grid(row=0, column=i, sticky="w", padx=5)
+        
+        # Add each transaction
+        for i, transaction in enumerate(transactions):
+            transaction_frame = ctk.CTkFrame(self.transactions_list_frame, fg_color="transparent")
+            transaction_frame.pack(fill="x", pady=2)
+            transaction_frame.grid_columnconfigure((0, 1, 2, 3, 4), weight=1)
+            
+            # Format date
+            date_str = transaction.transaction_date.strftime("%Y-%m-%d %H:%M")
+            
+            # Format amount text and color
+            amount = float(transaction.amount)
+            if transaction.transaction_type in ["withdrawal", "external_transfer", "transfer"]:
+                # For outgoing transactions, show negative amount
+                if transaction.account_id:  # If this is the source account
+                    amount_text = f"-${amount:,.2f}"
+                    amount_color = "#F44336"  # Red
+                else:
+                    amount_text = f"${amount:,.2f}"
+                    amount_color = "#4CAF50"  # Green
+            else:
+                amount_text = f"${amount:,.2f}"
+                amount_color = "#4CAF50"  # Green
+            
+            # Transaction type display
+            transaction_type_map = {
+                "deposit": "Deposit",
+                "withdrawal": "Withdrawal", 
+                "transfer": "Transfer",
+                "external_transfer": "External Transfer"
+            }
+            
+            type_text = transaction_type_map.get(transaction.transaction_type, transaction.transaction_type)
+            
+            # Data cells
+            date_label = ctk.CTkLabel(
+                transaction_frame,
+                text=date_str,
+                font=ctk.CTkFont(size=12)
+            )
+            date_label.grid(row=0, column=0, sticky="w", padx=5, pady=3)
+            
+            account_label = ctk.CTkLabel(
+                transaction_frame,
+                text=transaction.account_name or "Unknown",
+                font=ctk.CTkFont(size=12)
+            )
+            account_label.grid(row=0, column=1, sticky="w", padx=5, pady=3)
+            
+            category_label = ctk.CTkLabel(
+                transaction_frame,
+                text=transaction.category_name or "N/A",
+                font=ctk.CTkFont(size=12)
+            )
+            category_label.grid(row=0, column=2, sticky="w", padx=5, pady=3)
+            
+            amount_label = ctk.CTkLabel(
+                transaction_frame,
+                text=amount_text,
+                font=ctk.CTkFont(size=12),
+                text_color=amount_color
+            )
+            amount_label.grid(row=0, column=3, sticky="w", padx=5, pady=3)
+            
+            type_label = ctk.CTkLabel(
+                transaction_frame,
+                text=type_text,
+                font=ctk.CTkFont(size=12)
+            )
+            type_label.grid(row=0, column=4, sticky="w", padx=5, pady=3)
+            
+            # Add a separator
+            separator = ctk.CTkFrame(self.transactions_list_frame, height=1, fg_color="gray75")
+            separator.pack(fill="x", pady=(3, 0))
+    
+    def refresh_dashboard(self):
+        """Refresh all dashboard components."""
+        self.update_total_balance()
+        self.update_account_count()
+        self.update_recent_transactions()
     
     def create_account_card(self, account):
         """Create a card for an account."""
