@@ -3,35 +3,46 @@ import mysql.connector
 from mysql.connector import Error
 import sys
 import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+
+# Database connection parameters
+DB_CONFIG = {
+    'host': os.getenv('DB_HOST', 'localhost'),
+    'user': os.getenv('DB_USER', 'root'),
+    'password': os.getenv('DB_PASSWORD', ''),
+    'port': os.getenv('DB_PORT', '3306'),
+    'database': os.getenv('DB_NAME', 'billionnaires_budget_buddy')
+}
 
 # Add the parent directory to the path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from database_setup import get_connection
 
 class User:
-    def __init__(self, id=None, email=None, first_name=None, last_name=None, phone=None, address=None, role_id=None):
+    def __init__(self, id=None, name=None, email=None, password_hash=None, role_id=None):
         self.id = id
+        self.name = name
         self.email = email
-        self.first_name = first_name
-        self.last_name = last_name
-        self.phone = phone
-        self.address = address
+        self.password_hash = password_hash
         self.role_id = role_id
 
     @staticmethod
-    def hash_password(password):
-        """Hash a password for storing."""
-        return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+    def get_connection():
+        """Get a database connection."""
+        try:
+            connection = mysql.connector.connect(**DB_CONFIG)
+            return connection
+        except Error as e:
+            print(f"Error connecting to MySQL: {e}")
+            return None
 
     @staticmethod
-    def verify_password(stored_password, provided_password):
-        """Verify a stored password against a provided password."""
-        return bcrypt.checkpw(provided_password.encode('utf-8'), stored_password.encode('utf-8'))
-
-    @staticmethod
-    def register(email, password, first_name, last_name, phone, address, role_id=2):  # Default role is client
-        """Register a new user."""
-        connection = get_connection()
+    def create_user(email, password, first_name, last_name, phone=None, address=None, role_id=2):
+        """Create a new user in the database."""
+        connection = User.get_connection()
         if not connection:
             return False, "Database connection error"
 
@@ -41,25 +52,32 @@ class User:
             # Check if email already exists
             cursor.execute("SELECT id FROM users WHERE email = %s", (email,))
             if cursor.fetchone():
-                return False, "Email already exists"
+                return False, "Email already registered"
             
             # Hash the password
-            hashed_password = User.hash_password(password)
+            hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
             
-            # Insert the user
-            query = """
+            # Insert the new user
+            cursor.execute("""
             INSERT INTO users (email, password_hash, first_name, last_name, phone, address, role_id)
             VALUES (%s, %s, %s, %s, %s, %s, %s)
-            """
-            cursor.execute(query, (email, hashed_password, first_name, last_name, phone, address, role_id))
-            connection.commit()
+            """, (email, hashed_password.decode('utf-8'), first_name, last_name, phone, address, role_id))
             
-            # Get the user id
+            connection.commit()
             user_id = cursor.lastrowid
             
-            return True, user_id
+            # Create a User object for the new user
+            user = User(
+                id=user_id,
+                name=f"{first_name} {last_name}",
+                email=email,
+                password_hash=hashed_password.decode('utf-8'),
+                role_id=role_id
+            )
             
+            return True, user
         except Error as e:
+            print(f"Error creating user: {e}")
             return False, f"Database error: {e}"
         finally:
             if connection.is_connected():
@@ -67,45 +85,41 @@ class User:
                 connection.close()
 
     @staticmethod
-    def login(email, password):
-        """Login a user."""
-        connection = get_connection()
+    def authenticate(email, password):
+        """Authenticate a user."""
+        connection = User.get_connection()
         if not connection:
             return False, "Database connection error"
 
         try:
             cursor = connection.cursor(dictionary=True)
             
-            # Get the user
-            query = """
-            SELECT id, email, password_hash, first_name, last_name, phone, address, role_id
-            FROM users
-            WHERE email = %s
-            """
-            cursor.execute(query, (email,))
-            user = cursor.fetchone()
+            # Get user by email
+            cursor.execute("""
+            SELECT id, email, password_hash, first_name, last_name, role_id
+            FROM users WHERE email = %s
+            """, (email,))
             
-            if not user:
+            user_data = cursor.fetchone()
+            
+            if not user_data:
                 return False, "Invalid email or password"
             
-            # Verify the password
-            if not User.verify_password(user['password_hash'], password):
+            # Verify password
+            if bcrypt.checkpw(password.encode('utf-8'), user_data['password_hash'].encode('utf-8')):
+                # Create user object
+                user = User(
+                    id=user_data['id'],
+                    name=f"{user_data['first_name']} {user_data['last_name']}",
+                    email=user_data['email'],
+                    password_hash=user_data['password_hash'],
+                    role_id=user_data['role_id']
+                )
+                return True, user
+            else:
                 return False, "Invalid email or password"
-            
-            # Create a user object
-            user_obj = User(
-                id=user['id'],
-                email=user['email'],
-                first_name=user['first_name'],
-                last_name=user['last_name'],
-                phone=user['phone'],
-                address=user['address'],
-                role_id=user['role_id']
-            )
-            
-            return True, user_obj
-            
         except Error as e:
+            print(f"Error authenticating user: {e}")
             return False, f"Database error: {e}"
         finally:
             if connection.is_connected():
@@ -113,38 +127,32 @@ class User:
                 connection.close()
 
     @staticmethod
-    def get_by_id(user_id):
+    def get_user_by_id(user_id):
         """Get a user by ID."""
-        connection = get_connection()
+        connection = User.get_connection()
         if not connection:
             return None
 
         try:
             cursor = connection.cursor(dictionary=True)
             
-            query = """
-            SELECT id, email, first_name, last_name, phone, address, role_id
-            FROM users
-            WHERE id = %s
-            """
-            cursor.execute(query, (user_id,))
+            cursor.execute("""
+            SELECT id, email, first_name, last_name, role_id
+            FROM users WHERE id = %s
+            """, (user_id,))
+            
             user_data = cursor.fetchone()
             
-            if not user_data:
-                return None
-            
-            return User(
-                id=user_data['id'],
-                email=user_data['email'],
-                first_name=user_data['first_name'],
-                last_name=user_data['last_name'],
-                phone=user_data['phone'],
-                address=user_data['address'],
-                role_id=user_data['role_id']
-            )
-            
+            if user_data:
+                return User(
+                    id=user_data['id'],
+                    name=f"{user_data['first_name']} {user_data['last_name']}",
+                    email=user_data['email'],
+                    role_id=user_data['role_id']
+                )
+            return None
         except Error as e:
-            print(f"Error: {e}")
+            print(f"Error getting user: {e}")
             return None
         finally:
             if connection.is_connected():
@@ -313,12 +321,12 @@ class User:
                 return False, "User not found"
                 
             # Verify the current password
-            if not User.verify_password(result['password_hash'], current_password):
+            if not bcrypt.checkpw(current_password.encode('utf-8'), result['password_hash'].encode('utf-8')):
                 return False, "Current password is incorrect"
                 
             # Hash and update the new password
-            new_hash = User.hash_password(new_password)
-            cursor.execute("UPDATE users SET password_hash = %s WHERE id = %s", (new_hash, self.id))
+            new_hash = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt())
+            cursor.execute("UPDATE users SET password_hash = %s WHERE id = %s", (new_hash.decode('utf-8'), self.id))
             connection.commit()
             
             return True, "Password changed successfully"

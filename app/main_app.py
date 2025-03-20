@@ -70,27 +70,39 @@ class MainApp(ctk.CTk):
 
     def handle_login(self, email, password):
         """Handle login attempt."""
-        # Here we would normally authenticate against a database
-        # For now, just create a test user
-        self.current_user = User(1, "John Doe", email, "password_hash")
+        # Use the User model to authenticate against the database
+        success, result = User.authenticate(email, password)
         
-        # Now show the main application with sidebar
-        self.create_sidebar()
-        self.show_view("dashboard")
-        
-        return True, "Login successful"
+        if success:
+            # Store the user object
+            self.current_user = result
+            
+            # Now show the main application with sidebar
+            self.create_sidebar()
+            self.show_view("dashboard")
+            
+            return True, "Login successful"
+        else:
+            # Return the error message from authentication
+            return False, result
 
     def handle_registration(self, email, password, first_name, last_name, phone, address):
         """Handle registration of a new user."""
-        # Here we would normally save to a database
-        # For now, just create the user and log them in
-        self.current_user = User(1, first_name + " " + last_name, email, "password_hash")
+        # Use the User model to create a new user in the database
+        success, result = User.create_user(email, password, first_name, last_name, phone, address)
         
-        # Create sidebar and show dashboard
-        self.create_sidebar()
-        self.show_view("dashboard")
-        
-        return True, "Registration successful"
+        if success:
+            # Store the user object
+            self.current_user = result
+            
+            # Create sidebar and show dashboard
+            self.create_sidebar()
+            self.show_view("dashboard")
+            
+            return True, "Registration successful"
+        else:
+            # Return the error message from user creation
+            return False, result
 
     def create_sidebar(self):
         """Create the sidebar with navigation buttons."""
