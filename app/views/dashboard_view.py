@@ -18,6 +18,7 @@ from app.models.transaction import Transaction
 from app.models.category import Category
 from app.views.dialogs.add_funds_dialog import AddFundsDialog
 from app.views.dialogs.send_funds_dialog import SendFundsDialog
+from app.views.dialogs.withdraw_funds_dialog import WithdrawFundsDialog
 
 class DashboardView(ctk.CTkFrame):
     def __init__(self, master, user):
@@ -108,8 +109,8 @@ class DashboardView(ctk.CTkFrame):
     
     def withdraw_funds(self):
         """Open withdraw funds dialog."""
-        print("Withdraw funds dialog would open here")
-        # In a complete implementation, this would show the WithdrawFundsDialog
+        dialog = WithdrawFundsDialog(self, self.user, callback=self.refresh_dashboard)
+        dialog.wait_window()
     
     def transfer_funds(self):
         """Open transfer funds dialog."""
