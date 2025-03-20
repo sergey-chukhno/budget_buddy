@@ -691,4 +691,91 @@ class Transaction:
                     if connection.is_connected():
                         cursor.close()
                         connection.close()
-        return self._created_by_name 
+        return self._created_by_name
+
+    @staticmethod
+    def create_transaction(user_id, account_id, category_id, amount, transaction_type, description=None, recipient_account_id=None, external_recipient=None):
+        """Create a new transaction and update account balance."""
+        connection = get_connection()
+        if not connection:
+            return False, "Database connection error"
+            
+        try:
+            connection.autocommit = False
+            cursor = connection.cursor()
+            
+            # First check if the account exists and belongs to the user
+            cursor.execute(
+                "SELECT id, balance FROM accounts WHERE id = %s AND user_id = %s",
+                (account_id, user_id)
+            )
+            account = cursor.fetchone()
+            if not account:
+                connection.rollback()
+                return False, "Account not found or does not belong to user"
+                
+            # Get current account balance
+            current_balance = float(account[1])
+            
+            # Calculate new balance based on transaction type
+            if transaction_type in ["withdraw", "send", "transfer_out"]:
+                if current_balance < float(amount):
+                    connection.rollback()
+                    return False, "Insufficient funds"
+                new_balance = current_balance - float(amount)
+            elif transaction_type in ["deposit", "receive", "transfer_in"]:
+                new_balance = current_balance + float(amount)
+            else:
+                connection.rollback()
+                return False, "Invalid transaction type"
+                
+            # Update the account balance
+            cursor.execute(
+                "UPDATE accounts SET balance = %s WHERE id = %s",
+                (new_balance, account_id)
+            )
+            
+            # If it's a transfer, also update the recipient account
+            if transaction_type == "transfer_out" and recipient_account_id:
+                # Check if recipient account exists
+                cursor.execute(
+                    "SELECT id, balance FROM accounts WHERE id = %s",
+                    (recipient_account_id,)
+                )
+                recipient_account = cursor.fetchone()
+                if not recipient_account:
+                    connection.rollback()
+                    return False, "Recipient account not found"
+                    
+                # Update recipient account balance
+                recipient_balance = float(recipient_account[1]) + float(amount)
+                cursor.execute(
+                    "UPDATE accounts SET balance = %s WHERE id = %s",
+                    (recipient_balance, recipient_account_id)
+                )
+                
+            # Create the transaction record
+            now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            cursor.execute(
+                """
+                INSERT INTO transactions 
+                (account_id, category_id, amount, transaction_type, description, 
+                transaction_date, created_by_user_id, recipient_account_id, external_recipient)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """,
+                (account_id, category_id, amount, transaction_type, description, 
+                now, user_id, recipient_account_id, external_recipient)
+            )
+            
+            # Commit the transaction
+            connection.commit()
+            return True, "Transaction created successfully"
+            
+        except Error as e:
+            # Rollback in case of error
+            connection.rollback()
+            return False, f"Database error: {e}"
+        finally:
+            if connection.is_connected():
+                cursor.close()
+                connection.close() 

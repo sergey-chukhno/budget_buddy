@@ -21,7 +21,7 @@ class SendFundsDialog(ctk.CTkToplevel):
         
         # Set up the dialog window
         self.title("Send Funds")
-        self.geometry("450x620")  # Make it a bit wider and taller
+        self.geometry("400x550")
         self.resizable(False, False)
         
         # Make dialog modal
@@ -46,140 +46,154 @@ class SendFundsDialog(ctk.CTkToplevel):
         self.protocol("WM_DELETE_WINDOW", self.close)
     
     def create_widgets(self):
-        # Simple grid layout
-        self.grid_columnconfigure(0, weight=1)
-        self.grid_rowconfigure(7, weight=1)
+        """Create the dialog widgets."""
+        # Main container
+        container = ctk.CTkFrame(self)
+        container.pack(fill="both", expand=True, padx=20, pady=20)
         
         # Title
         title_label = ctk.CTkLabel(
-            self,
+            container,
             text="Send Funds to External Account",
             font=ctk.CTkFont(size=20, weight="bold")
         )
-        title_label.grid(row=0, column=0, pady=(20, 30), padx=20, sticky="ew")
+        title_label.pack(pady=(0, 20))
         
         # Account selection
+        account_frame = ctk.CTkFrame(container, fg_color="transparent")
+        account_frame.pack(fill="x", pady=(0, 10))
+        
         account_label = ctk.CTkLabel(
-            self,
+            account_frame,
             text="Select Account:",
             font=ctk.CTkFont(size=14)
         )
-        account_label.grid(row=1, column=0, padx=20, pady=(0, 5), sticky="w")
+        account_label.pack(anchor="w")
         
         # Get user's accounts
         self.accounts = Account.get_accounts_for_user(self.user.id)
-        self.account_options = [f"{acc.account_name} (${acc.balance:,.2f})" for acc in self.accounts]
-        
-        # Account dropdown
         self.account_var = ctk.StringVar()
-        if self.account_options:
-            self.account_var.set(self.account_options[0])
         
-        self.account_menu = ctk.CTkComboBox(
-            self,
-            values=self.account_options,
+        # Create account dropdown values
+        account_options = [f"{acc.account_name} (${acc.balance:,.2f})" for acc in self.accounts]
+        if account_options:
+            self.account_var.set(account_options[0])
+        
+        self.account_menu = ctk.CTkOptionMenu(
+            account_frame,
+            values=account_options,
             variable=self.account_var,
-            width=400,
-            state="readonly"
+            width=300
         )
-        self.account_menu.grid(row=2, column=0, padx=20, pady=(0, 15), sticky="ew")
+        self.account_menu.pack(pady=(5, 0))
         
-        # Recipient
+        # Recipient information
+        recipient_frame = ctk.CTkFrame(container, fg_color="transparent")
+        recipient_frame.pack(fill="x", pady=(0, 10))
+        
         recipient_label = ctk.CTkLabel(
-            self,
+            recipient_frame,
             text="Recipient Information:",
             font=ctk.CTkFont(size=14)
         )
-        recipient_label.grid(row=3, column=0, padx=20, pady=(0, 5), sticky="w")
+        recipient_label.pack(anchor="w")
         
         self.recipient_entry = ctk.CTkEntry(
-            self,
+            recipient_frame,
             placeholder_text="Enter recipient name or account number",
-            width=400
+            width=300
         )
-        self.recipient_entry.grid(row=4, column=0, padx=20, pady=(0, 15), sticky="ew")
+        self.recipient_entry.pack(pady=(5, 0))
         
-        # Amount
+        # Amount input
+        amount_frame = ctk.CTkFrame(container, fg_color="transparent")
+        amount_frame.pack(fill="x", pady=(0, 10))
+        
         amount_label = ctk.CTkLabel(
-            self,
+            amount_frame,
             text="Amount:",
             font=ctk.CTkFont(size=14)
         )
-        amount_label.grid(row=5, column=0, padx=20, pady=(0, 5), sticky="w")
+        amount_label.pack(anchor="w")
         
         self.amount_entry = ctk.CTkEntry(
-            self,
+            amount_frame,
             placeholder_text="Enter amount",
-            width=400
+            width=300
         )
-        self.amount_entry.grid(row=6, column=0, padx=20, pady=(0, 15), sticky="ew")
+        self.amount_entry.pack(pady=(5, 0))
         
-        # Category
+        # Category selection
+        category_frame = ctk.CTkFrame(container, fg_color="transparent")
+        category_frame.pack(fill="x", pady=(0, 10))
+        
         category_label = ctk.CTkLabel(
-            self,
+            category_frame,
             text="Select Category:",
             font=ctk.CTkFont(size=14)
         )
-        category_label.grid(row=7, column=0, padx=20, pady=(0, 5), sticky="w")
+        category_label.pack(anchor="w")
         
         # Get expense categories
         self.categories = Category.get_all_categories(is_expense=True)
-        self.category_options = [cat.category_name for cat in self.categories]
-        
-        # Category dropdown
         self.category_var = ctk.StringVar()
-        if self.category_options:
-            self.category_var.set(self.category_options[0])
+        
+        # Create category options
+        category_options = [cat.category_name for cat in self.categories]
+        if category_options:
+            self.category_var.set(category_options[0])
         else:
-            self.category_options = ["Other Expense"]
-            self.category_var.set(self.category_options[0])
+            # Default category if none are available
+            category_options = ["Other Expense"]
+            self.category_var.set(category_options[0])
         
-        self.category_menu = ctk.CTkComboBox(
-            self,
-            values=self.category_options,
+        self.category_menu = ctk.CTkOptionMenu(
+            category_frame,
+            values=category_options,
             variable=self.category_var,
-            width=400,
-            state="readonly"
+            width=300
         )
-        self.category_menu.grid(row=8, column=0, padx=20, pady=(0, 15), sticky="ew")
+        self.category_menu.pack(pady=(5, 0))
         
-        # Description
+        # Description input
+        description_frame = ctk.CTkFrame(container, fg_color="transparent")
+        description_frame.pack(fill="x", pady=(0, 10))
+        
         description_label = ctk.CTkLabel(
-            self,
+            description_frame,
             text="Description (optional):",
             font=ctk.CTkFont(size=14)
         )
-        description_label.grid(row=9, column=0, padx=20, pady=(0, 5), sticky="w")
+        description_label.pack(anchor="w")
         
         self.description_entry = ctk.CTkEntry(
-            self,
+            description_frame,
             placeholder_text="Enter description",
-            width=400
+            width=300
         )
-        self.description_entry.grid(row=10, column=0, padx=20, pady=(0, 30), sticky="ew")
+        self.description_entry.pack(pady=(5, 0))
         
         # Buttons frame
-        buttons_frame = ctk.CTkFrame(self, fg_color="transparent")
-        buttons_frame.grid(row=11, column=0, padx=20, pady=(0, 20), sticky="ew")
-        buttons_frame.grid_columnconfigure((0, 1), weight=1)
+        buttons_frame = ctk.CTkFrame(container, fg_color="transparent")
+        buttons_frame.pack(fill="x", pady=(20, 0))
         
         # Cancel button
         cancel_btn = ctk.CTkButton(
             buttons_frame,
             text="Cancel",
-            width=180,
+            width=100,
             command=self.close
         )
-        cancel_btn.grid(row=0, column=0, padx=10, pady=0, sticky="w")
+        cancel_btn.pack(side="left", padx=10)
         
         # Send button
         send_btn = ctk.CTkButton(
             buttons_frame,
             text="Send",
-            width=180,
+            width=100,
             command=self.send_funds
         )
-        send_btn.grid(row=0, column=1, padx=10, pady=0, sticky="e")
+        send_btn.pack(side="right", padx=10)
     
     def send_funds(self):
         """Send funds to the external recipient."""

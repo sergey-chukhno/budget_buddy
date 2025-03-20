@@ -167,12 +167,21 @@ class AddFundsDialog(ctk.CTkToplevel):
         """Add funds to the selected account."""
         try:
             # Get selected account
-            account_index = self.account_menu.current()
-            if account_index < 0:
+            selected_account = self.account_var.get()
+            if not selected_account:
                 self.show_error("Please select an account")
                 return
             
-            account = self.accounts[account_index]
+            # Find the account from the selection
+            account = None
+            for acc in self.accounts:
+                if selected_account.startswith(acc.account_name):
+                    account = acc
+                    break
+            
+            if not account:
+                self.show_error("Invalid account selection")
+                return
             
             # Get amount
             try:
@@ -185,12 +194,21 @@ class AddFundsDialog(ctk.CTkToplevel):
                 return
             
             # Get selected category
-            selected_category_index = self.category_menu.current()
-            if selected_category_index < 0:
+            selected_category = self.category_var.get()
+            if not selected_category:
                 self.show_error("Please select a category")
                 return
             
-            category = self.categories[selected_category_index]
+            # Find the category from the selection
+            category = None
+            for cat in self.categories:
+                if cat.category_name == selected_category:
+                    category = cat
+                    break
+            
+            if not category:
+                self.show_error("Invalid category selection")
+                return
             
             # Get description
             description = self.description_entry.get().strip()
