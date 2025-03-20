@@ -9,6 +9,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from app.models.account import Account
 from app.views.dialogs.add_account_dialog import AddAccountDialog
 from app.views.dialogs.confirm_dialog import ConfirmDialog
+from app.views.dialogs.view_account_dialog import ViewAccountDialog
 
 class AccountsView(ctk.CTkFrame):
     def __init__(self, master, user):
@@ -131,15 +132,6 @@ class AccountsView(ctk.CTkFrame):
         )
         view_btn.pack(side="left", padx=5)
         
-        # Edit button
-        edit_btn = ctk.CTkButton(
-            actions_frame, 
-            text="Edit",
-            width=70,
-            command=lambda a=account: self.edit_account(a)
-        )
-        edit_btn.pack(side="left", padx=5)
-        
         # Delete button
         delete_btn = ctk.CTkButton(
             actions_frame, 
@@ -158,13 +150,7 @@ class AccountsView(ctk.CTkFrame):
     
     def view_account(self, account):
         """View account details."""
-        print(f"Viewing account {account.account_name}")
-        # This would open a detailed view of the account with transaction history
-    
-    def edit_account(self, account):
-        """Edit an account."""
-        print(f"Editing account {account.account_name}")
-        # This would open a dialog to edit the account
+        ViewAccountDialog(self, account)
     
     def delete_account(self, account):
         """Delete an account."""
