@@ -266,9 +266,8 @@ class MainView(ctk.CTkFrame):
         self.refresh_current_view()
     
     def show_transfer_funds_dialog(self):
-        dialog = TransferFundsDialog(self, self.user)
+        dialog = TransferFundsDialog(self, self.user, callback=self.refresh_current_view)
         dialog.wait_window()
-        self.refresh_current_view()
     
     def show_send_funds_dialog(self):
         from app.views.dialogs.send_funds_dialog import SendFundsDialog
