@@ -20,7 +20,7 @@ class TransactionsView(ctk.CTkFrame):
         
         # Set up grid layout
         self.grid_columnconfigure(0, weight=1)
-        self.grid_rowconfigure(2, weight=1)
+        self.grid_rowconfigure(1, weight=1)  # Changed from 2 to 1 since we'll use a main container
         
         # Initialize variables
         self.current_page = 1
@@ -41,14 +41,16 @@ class TransactionsView(ctk.CTkFrame):
         
         # Header
         self.header_frame = ctk.CTkFrame(self, fg_color="transparent")
-        self.header_frame.grid(row=0, column=0, padx=20, pady=(20, 0), sticky="ew")
+        self.header_frame.grid(row=0, column=0, padx=20, pady=(20, 10), sticky="ew")
+        self.header_frame.grid_columnconfigure(0, weight=1)
+        self.header_frame.grid_columnconfigure(1, weight=0)
         
         self.title_label = ctk.CTkLabel(
             self.header_frame,
             text="Transactions",
             font=ctk.CTkFont(size=24, weight="bold")
         )
-        self.title_label.pack(side="left", padx=0, pady=0)
+        self.title_label.grid(row=0, column=0, sticky="w", padx=0, pady=0)
         
         # Export button
         self.export_button = ctk.CTkButton(
@@ -57,7 +59,13 @@ class TransactionsView(ctk.CTkFrame):
             width=120,
             command=self.export_report
         )
-        self.export_button.pack(side="right", padx=0, pady=0)
+        self.export_button.grid(row=0, column=1, sticky="e", padx=0, pady=0)
+        
+        # Create filters frame and transactions table in a single container
+        self.main_container = ctk.CTkFrame(self, fg_color="transparent")
+        self.main_container.grid(row=1, column=0, padx=20, pady=(0, 20), sticky="nsew")
+        self.main_container.grid_columnconfigure(0, weight=1)
+        self.main_container.grid_rowconfigure(1, weight=1)  # Make table row expandable
         
         # Create filters frame
         self.create_filters_frame()
@@ -79,7 +87,7 @@ class TransactionsView(ctk.CTkFrame):
         for widget in self.table_content.winfo_children():
             widget.destroy()
         
-        print("Refreshing transactions...")
+        print(f"Refreshing transactions for User ID: {self.user.id}")
         
         # Prepare filter parameters
         start_date = self.start_date_var.get() if self.start_date_var.get() else None
@@ -134,10 +142,9 @@ class TransactionsView(ctk.CTkFrame):
         # Calculate offset for pagination
         offset = (self.current_page - 1) * self.page_size
         
-        # Get transactions with filters
-        print(f"User ID: {self.user.id}")
-        print(f"Fetching transactions with: limit={self.page_size}, offset={offset}, order_by={self.sort_column}, order_dir={self.sort_direction}")
+        print(f"Getting transactions with parameters: limit={self.page_size}, offset={offset}, account_id={account_id}, category_id={category_id}, type={transaction_type}")
         
+        # Get transactions with filters
         transactions = Transaction.get_transactions_for_user(
             self.user.id,
             limit=self.page_size,
@@ -157,18 +164,21 @@ class TransactionsView(ctk.CTkFrame):
         
         print(f"Found {len(transactions)} transactions")
         
+        # Define fixed column widths for better alignment
+        col_widths = [120, 140, 140, 250, 140, 100, 140]
+        
         # Get total count for pagination
-        # In a real implementation, you would have a separate count method
-        # For now, we'll use the length of transactions as an approximation
         self.total_records = len(transactions)
         
         # Create header
-        header_frame = ctk.CTkFrame(self.table_content, fg_color="transparent")
-        header_frame.grid(row=0, column=0, columnspan=7, sticky="ew", padx=0, pady=(0, 10))
-        header_frame.grid_columnconfigure((0, 1, 2, 3, 4, 5, 6), weight=1)
+        header_frame = ctk.CTkFrame(self.table_content, fg_color=("gray90", "gray25"))
+        header_frame.grid(row=0, column=0, sticky="ew", padx=0, pady=0)
+        
+        # Configure the header frame's column weights
+        for i in range(7):
+            header_frame.grid_columnconfigure(i, weight=1, minsize=col_widths[i])
         
         # Header labels with sort functionality
-        header_labels = ["Date", "Account", "Category", "Description", "Recipient", "Amount", "Type"]
         column_data = [
             ("transaction_date", "Date"),
             ("account_id", "Account"),
@@ -192,16 +202,18 @@ class TransactionsView(ctk.CTkFrame):
                 header_frame,
                 text=display_text,
                 fg_color="transparent",
-                hover_color=("#E1E1E1", "#333333"),
-                height=32,
+                hover_color=("gray80", "gray30"),
+                height=40,
+                width=col_widths[i],
                 anchor="w",
+                font=ctk.CTkFont(size=14, weight="bold"),
                 command=lambda col=col_name: self.sort_by_column(col)
             )
-            header_btn.grid(row=0, column=i, sticky="ew", padx=5)
+            header_btn.grid(row=0, column=i, padx=5, pady=5, sticky="w")
         
         # Separator after header
         header_separator = ctk.CTkFrame(self.table_content, height=2, fg_color="#3B8ED0")
-        header_separator.grid(row=1, column=0, columnspan=7, sticky="ew", padx=5, pady=(0, 10))
+        header_separator.grid(row=1, column=0, sticky="ew", padx=0, pady=(0, 10))
         
         if not transactions:
             no_data_label = ctk.CTkLabel(
@@ -210,67 +222,123 @@ class TransactionsView(ctk.CTkFrame):
                 font=ctk.CTkFont(size=16),
                 text_color="gray"
             )
-            no_data_label.grid(row=2, column=0, columnspan=7, padx=20, pady=40)
+            no_data_label.grid(row=2, column=0, padx=20, pady=40)
             self.update_pagination_info()
             return
         
+        # Create a main table frame for rows
+        table_rows_frame = ctk.CTkFrame(self.table_content, fg_color="transparent")
+        table_rows_frame.grid(row=2, column=0, sticky="nsew", padx=0, pady=0)
+        table_rows_frame.grid_columnconfigure(0, weight=1)
+        
         # Add transactions to the table
         for i, transaction in enumerate(transactions):
-            # Format transaction data
-            date_str = transaction.transaction_date.strftime("%Y-%m-%d %H:%M")
-            account_name = transaction._account_name or "N/A"
-            category_name = transaction._category_name or "N/A"
-            description = transaction.description or ""
-            
-            # Recipient info
-            recipient = ""
-            if transaction.transaction_type == "transfer" and transaction._recipient_account_name:
-                recipient = transaction._recipient_account_name
-            elif transaction.transaction_type == "external_transfer" and transaction.external_recipient:
-                recipient = transaction.external_recipient
-            
-            # Amount with color
-            amount = float(transaction.amount)
-            if transaction.transaction_type in ["withdrawal", "external_transfer", "transfer"] and transaction.account_id:
-                amount_text = f"-${amount:,.2f}"
-                amount_color = "#F44336"  # Red
-            else:
-                amount_text = f"${amount:,.2f}"
-                amount_color = "#4CAF50"  # Green
-            
-            # Transaction type display
-            type_map = {
-                "deposit": "Deposit",
-                "withdrawal": "Withdrawal",
-                "transfer": "Transfer",
-                "external_transfer": "External Transfer"
-            }
-            type_text = type_map.get(transaction.transaction_type, transaction.transaction_type)
-            
-            # Create row frame with alternating background
-            row_bg = "#F5F5F5" if i % 2 == 0 else "#FFFFFF"
-            row_frame = ctk.CTkFrame(self.table_content, fg_color=row_bg, corner_radius=0)
-            row_frame.grid(row=i+2, column=0, columnspan=7, sticky="ew", padx=0, pady=0)
-            row_frame.grid_columnconfigure((0, 1, 2, 3, 4, 5, 6), weight=1)
-            
-            # Add transaction data to row
-            ctk.CTkLabel(row_frame, text=date_str, anchor="w").grid(row=0, column=0, padx=5, pady=8, sticky="w")
-            ctk.CTkLabel(row_frame, text=account_name, anchor="w").grid(row=0, column=1, padx=5, pady=8, sticky="w")
-            ctk.CTkLabel(row_frame, text=category_name, anchor="w").grid(row=0, column=2, padx=5, pady=8, sticky="w")
-            ctk.CTkLabel(row_frame, text=description, anchor="w").grid(row=0, column=3, padx=5, pady=8, sticky="w")
-            ctk.CTkLabel(row_frame, text=recipient, anchor="w").grid(row=0, column=4, padx=5, pady=8, sticky="w")
-            
-            amount_label = ctk.CTkLabel(row_frame, text=amount_text, text_color=amount_color, anchor="e")
-            amount_label.grid(row=0, column=5, padx=5, pady=8, sticky="e")
-            
-            ctk.CTkLabel(row_frame, text=type_text, anchor="w").grid(row=0, column=6, padx=5, pady=8, sticky="w")
-            
-            # Add a separator line
-            separator = ctk.CTkFrame(self.table_content, height=1, fg_color="#E0E0E0")
-            separator.grid(row=i+3, column=0, columnspan=7, sticky="ew", padx=0, pady=0)
+            try:
+                # Format transaction data
+                date_str = transaction.transaction_date.strftime("%Y-%m-%d %H:%M")
+                account_name = getattr(transaction, '_account_name', 'N/A')
+                category_name = getattr(transaction, '_category_name', 'N/A')
+                description = transaction.description or ""
+                
+                # Recipient info
+                recipient = ""
+                if transaction.transaction_type == "transfer" and hasattr(transaction, '_recipient_account_name'):
+                    recipient = transaction._recipient_account_name
+                elif transaction.transaction_type == "external_transfer" and transaction.external_recipient:
+                    recipient = transaction.external_recipient
+                
+                # Amount with color
+                amount = float(transaction.amount)
+                if transaction.transaction_type in ["withdrawal", "external_transfer", "transfer"] and transaction.account_id:
+                    amount_text = f"-${amount:,.2f}"
+                    amount_color = "#FF5252"  # Brighter red for dark theme
+                else:
+                    amount_text = f"${amount:,.2f}"
+                    amount_color = "#4CAF50"  # Green
+                
+                # Transaction type display
+                type_map = {
+                    "deposit": "Deposit",
+                    "withdrawal": "Withdrawal",
+                    "transfer": "Transfer",
+                    "external_transfer": "External Transfer"
+                }
+                type_text = type_map.get(transaction.transaction_type, transaction.transaction_type)
+                
+                # Create row frame with alternating background for dark theme
+                row_bg = ("gray90", "gray20") if i % 2 == 0 else ("gray85", "gray17")
+                row_frame = ctk.CTkFrame(table_rows_frame, fg_color=row_bg, corner_radius=0, height=40)
+                row_frame.grid(row=i, column=0, sticky="ew", padx=0, pady=(0, 1))
+                
+                # Configure the row frame's column weights
+                for j in range(7):
+                    row_frame.grid_columnconfigure(j, weight=1, minsize=col_widths[j])
+                
+                # Make sure the row has a fixed height and doesn't resize
+                row_frame.grid_propagate(False)
+                
+                # Add transaction data to row with consistent widths
+                date_label = ctk.CTkLabel(row_frame, text=date_str, anchor="w", width=col_widths[0])
+                date_label.grid(row=0, column=0, padx=5, pady=8, sticky="w")
+                
+                account_label = ctk.CTkLabel(row_frame, text=account_name, anchor="w", width=col_widths[1])
+                account_label.grid(row=0, column=1, padx=5, pady=8, sticky="w")
+                
+                category_label = ctk.CTkLabel(row_frame, text=category_name, anchor="w", width=col_widths[2])
+                category_label.grid(row=0, column=2, padx=5, pady=8, sticky="w")
+                
+                # Description with ellipsis if too long
+                description_text = (description[:30] + '...') if len(description) > 30 else description
+                desc_label = ctk.CTkLabel(row_frame, text=description_text, anchor="w", width=col_widths[3])
+                desc_label.grid(row=0, column=3, padx=5, pady=8, sticky="w")
+                
+                recipient_label = ctk.CTkLabel(row_frame, text=recipient, anchor="w", width=col_widths[4])
+                recipient_label.grid(row=0, column=4, padx=5, pady=8, sticky="w")
+                
+                amount_label = ctk.CTkLabel(
+                    row_frame, 
+                    text=amount_text, 
+                    text_color=amount_color, 
+                    anchor="e", 
+                    width=col_widths[5],
+                    font=ctk.CTkFont(weight="bold")
+                )
+                amount_label.grid(row=0, column=5, padx=5, pady=8, sticky="e")
+                
+                # Transaction type with styled background
+                type_frame = ctk.CTkFrame(row_frame, fg_color=self._get_type_color(transaction.transaction_type), corner_radius=8)
+                type_frame.grid(row=0, column=6, padx=5, pady=4, sticky="w")
+                
+                type_label = ctk.CTkLabel(
+                    type_frame, 
+                    text=type_text, 
+                    text_color="white", 
+                    anchor="w", 
+                    font=ctk.CTkFont(size=12, weight="bold"),
+                    corner_radius=8
+                )
+                type_label.grid(row=0, column=0, padx=8, pady=2)
+                
+            except Exception as e:
+                print(f"Error displaying transaction {i+1}: {e}")
+                import traceback
+                traceback.print_exc()
         
         # Update pagination info
         self.update_pagination_info()
+
+    def _get_type_color(self, transaction_type):
+        """Get color based on transaction type for better visual distinction."""
+        if transaction_type == "deposit":
+            return "#4CAF50"  # Green
+        elif transaction_type == "withdrawal":
+            return "#F44336"  # Red
+        elif transaction_type == "transfer":
+            return "#2196F3"  # Blue
+        elif transaction_type == "external_transfer":
+            return "#FF9800"  # Orange
+        else:
+            return "#9E9E9E"  # Gray
 
     def sort_by_column(self, column_name):
         """Sort the transactions by the selected column."""
@@ -290,22 +358,28 @@ class TransactionsView(ctk.CTkFrame):
     def create_transactions_table(self):
         """Create the transactions table."""
         # Main content frame 
-        self.content_frame = ctk.CTkFrame(self)
-        self.content_frame.grid(row=2, column=0, padx=20, pady=20, sticky="nsew")
+        self.content_frame = ctk.CTkFrame(self.main_container)
+        self.content_frame.grid(row=1, column=0, padx=0, pady=0, sticky="nsew")
         self.content_frame.grid_columnconfigure(0, weight=1)
-        self.content_frame.grid_rowconfigure(1, weight=1)
+        self.content_frame.grid_rowconfigure(0, weight=1)  # Changed to make scrollable frame expand
         
-        # Table header frame (will be populated in refresh_transactions)
-        self.table_header = ctk.CTkFrame(self.content_frame)
-        self.table_header.grid(row=0, column=0, padx=0, pady=0, sticky="ew")
+        # Total width of all columns plus some padding
+        table_total_width = 1000
         
-        # Table content (scrollable)
-        self.table_content = ctk.CTkScrollableFrame(self.content_frame)
-        self.table_content.grid(row=1, column=0, padx=0, pady=(0, 10), sticky="nsew")
+        # Table content with both vertical and horizontal scrolling
+        self.table_content = ctk.CTkScrollableFrame(
+            self.content_frame,
+            fg_color=("gray95", "gray15"),  # Match theme colors
+            height=500,  # Make it taller by default
+            width=table_total_width,  # Set minimum width for horizontal scrolling
+            orientation="vertical"  # Use vertical scrolling by default
+        )
+        self.table_content.grid(row=0, column=0, padx=0, pady=0, sticky="nsew")
         
         # Pagination frame
         self.pagination_frame = ctk.CTkFrame(self.content_frame, fg_color="transparent")
-        self.pagination_frame.grid(row=2, column=0, padx=10, pady=10, sticky="ew")
+        self.pagination_frame.grid(row=1, column=0, padx=0, pady=(10, 0), sticky="ew")
+        self.pagination_frame.grid_columnconfigure((0, 1, 2, 3), weight=1)
         
         # Previous page button
         self.prev_btn = ctk.CTkButton(
@@ -314,14 +388,14 @@ class TransactionsView(ctk.CTkFrame):
             width=100,
             command=self.prev_page
         )
-        self.prev_btn.pack(side="left", padx=5, pady=5)
+        self.prev_btn.grid(row=0, column=0, padx=5, pady=5, sticky="w")
         
         # Page information
         self.page_info = ctk.CTkLabel(
             self.pagination_frame,
             text="Page 1"
         )
-        self.page_info.pack(side="left", padx=20, pady=5)
+        self.page_info.grid(row=0, column=1, padx=20, pady=5, sticky="w")
         
         # Next page button
         self.next_btn = ctk.CTkButton(
@@ -330,115 +404,174 @@ class TransactionsView(ctk.CTkFrame):
             width=100,
             command=self.next_page
         )
-        self.next_btn.pack(side="left", padx=5, pady=5)
+        self.next_btn.grid(row=0, column=2, padx=5, pady=5, sticky="w")
         
         # Total records
         self.records_info = ctk.CTkLabel(
             self.pagination_frame,
             text="0 transactions"
         )
-        self.records_info.pack(side="right", padx=20, pady=5)
+        self.records_info.grid(row=0, column=3, padx=20, pady=5, sticky="e")
 
     def create_filters_frame(self):
         """Create filters for the transactions table."""
-        self.filters_frame = ctk.CTkFrame(self)
-        self.filters_frame.grid(row=1, column=0, padx=20, pady=10, sticky="ew")
+        self.filters_frame = ctk.CTkFrame(self.main_container)
+        self.filters_frame.grid(row=0, column=0, padx=0, pady=0, sticky="ew")
         
         # Create a grid layout for the filters
         self.filters_frame.grid_columnconfigure((0, 1, 2, 3, 4, 5), weight=1)
-        self.filters_frame.grid_rowconfigure((0, 1, 2), weight=1)
+        self.filters_frame.grid_rowconfigure((0, 1, 2), weight=0)  # Don't expand rows
         
         # Title for filters section
         filters_label = ctk.CTkLabel(
             self.filters_frame,
-            text="Filters",
-            font=ctk.CTkFont(size=14, weight="bold")
+            text="Filter Transactions",
+            font=ctk.CTkFont(size=16, weight="bold")
         )
-        filters_label.grid(row=0, column=0, padx=10, pady=(10, 5), sticky="w")
+        filters_label.grid(row=0, column=0, padx=10, pady=(15, 10), sticky="w")
         
-        # Account filter
-        account_label = ctk.CTkLabel(self.filters_frame, text="Account:", anchor="w")
-        account_label.grid(row=1, column=0, padx=(10, 5), pady=5, sticky="w")
+        # Account filter with label in a single container
+        account_container = ctk.CTkFrame(self.filters_frame, fg_color="transparent")
+        account_container.grid(row=1, column=0, columnspan=2, padx=10, pady=5, sticky="w")
+        
+        account_label = ctk.CTkLabel(
+            account_container, 
+            text="Account:", 
+            anchor="w",
+            width=70
+        )
+        account_label.grid(row=0, column=0, padx=(0, 5), pady=5, sticky="w")
         
         self.account_menu = ctk.CTkOptionMenu(
-            self.filters_frame,
+            account_container,
             variable=self.account_var,
             values=["All Accounts"],
-            width=150
+            width=180,
+            dynamic_resizing=False
         )
-        self.account_menu.grid(row=1, column=1, padx=5, pady=5, sticky="w")
+        self.account_menu.grid(row=0, column=1, padx=5, pady=5, sticky="w")
         
-        # Category filter
-        category_label = ctk.CTkLabel(self.filters_frame, text="Category:", anchor="w")
-        category_label.grid(row=1, column=2, padx=(10, 5), pady=5, sticky="w")
+        # Category filter with label
+        category_container = ctk.CTkFrame(self.filters_frame, fg_color="transparent")
+        category_container.grid(row=1, column=2, columnspan=2, padx=10, pady=5, sticky="w")
+        
+        category_label = ctk.CTkLabel(
+            category_container, 
+            text="Category:", 
+            anchor="w",
+            width=70
+        )
+        category_label.grid(row=0, column=0, padx=(0, 5), pady=5, sticky="w")
         
         self.category_menu = ctk.CTkOptionMenu(
-            self.filters_frame,
+            category_container,
             variable=self.category_var,
             values=["All Categories"],
-            width=150
+            width=180,
+            dynamic_resizing=False
         )
-        self.category_menu.grid(row=1, column=3, padx=5, pady=5, sticky="w")
+        self.category_menu.grid(row=0, column=1, padx=5, pady=5, sticky="w")
         
-        # Transaction type filter
-        type_label = ctk.CTkLabel(self.filters_frame, text="Type:", anchor="w")
-        type_label.grid(row=1, column=4, padx=(10, 5), pady=5, sticky="w")
+        # Transaction type filter with label
+        type_container = ctk.CTkFrame(self.filters_frame, fg_color="transparent")
+        type_container.grid(row=1, column=4, columnspan=2, padx=10, pady=5, sticky="w")
+        
+        type_label = ctk.CTkLabel(
+            type_container, 
+            text="Type:", 
+            anchor="w",
+            width=70
+        )
+        type_label.grid(row=0, column=0, padx=(0, 5), pady=5, sticky="w")
         
         transaction_types = ["All Types", "Deposit", "Withdrawal", "Transfer", "External Transfer"]
         self.type_menu = ctk.CTkOptionMenu(
-            self.filters_frame,
+            type_container,
             variable=self.transaction_type_var,
             values=transaction_types,
-            width=150
+            width=180,
+            dynamic_resizing=False
         )
-        self.type_menu.grid(row=1, column=5, padx=5, pady=5, sticky="w")
+        self.type_menu.grid(row=0, column=1, padx=5, pady=5, sticky="w")
         
-        # Amount range
-        amount_frame = ctk.CTkFrame(self.filters_frame, fg_color="transparent")
-        amount_frame.grid(row=2, column=0, columnspan=2, padx=10, pady=5, sticky="w")
+        # Amount range with label
+        amount_container = ctk.CTkFrame(self.filters_frame, fg_color="transparent")
+        amount_container.grid(row=2, column=0, columnspan=2, padx=10, pady=(5, 15), sticky="w")
         
-        amount_label = ctk.CTkLabel(amount_frame, text="Amount:", anchor="w")
+        amount_label = ctk.CTkLabel(
+            amount_container, 
+            text="Amount:", 
+            anchor="w",
+            width=70
+        )
         amount_label.grid(row=0, column=0, padx=(0, 5), pady=5, sticky="w")
         
+        amount_inputs = ctk.CTkFrame(amount_container, fg_color="transparent")
+        amount_inputs.grid(row=0, column=1, padx=0, pady=0, sticky="w")
+        
         self.min_amount_entry = ctk.CTkEntry(
-            amount_frame,
+            amount_inputs,
             placeholder_text="Min",
-            width=80,
+            width=85,
             textvariable=self.min_amount_var
         )
-        self.min_amount_entry.grid(row=0, column=1, padx=5, pady=5)
+        self.min_amount_entry.grid(row=0, column=0, padx=(0, 5), pady=5)
         
-        amount_to_label = ctk.CTkLabel(amount_frame, text="to")
-        amount_to_label.grid(row=0, column=2, padx=5, pady=5)
+        amount_to_label = ctk.CTkLabel(amount_inputs, text="to", width=20)
+        amount_to_label.grid(row=0, column=1, padx=5, pady=5)
         
         self.max_amount_entry = ctk.CTkEntry(
-            amount_frame,
+            amount_inputs,
             placeholder_text="Max",
-            width=80,
+            width=85,
             textvariable=self.max_amount_var
         )
-        self.max_amount_entry.grid(row=0, column=3, padx=5, pady=5)
+        self.max_amount_entry.grid(row=0, column=2, padx=(5, 0), pady=5)
         
-        # Search box
-        search_frame = ctk.CTkFrame(self.filters_frame, fg_color="transparent")
-        search_frame.grid(row=2, column=2, columnspan=2, padx=10, pady=5, sticky="w")
+        # Search box with label
+        search_container = ctk.CTkFrame(self.filters_frame, fg_color="transparent")
+        search_container.grid(row=2, column=2, columnspan=2, padx=10, pady=(5, 15), sticky="w")
+        
+        search_label = ctk.CTkLabel(
+            search_container, 
+            text="Search:", 
+            anchor="w",
+            width=70
+        )
+        search_label.grid(row=0, column=0, padx=(0, 5), pady=5, sticky="w")
         
         self.search_entry = ctk.CTkEntry(
-            search_frame,
-            placeholder_text="Search...",
-            width=150,
+            search_container,
+            placeholder_text="Search in descriptions...",
+            width=180,
             textvariable=self.search_var
         )
-        self.search_entry.grid(row=0, column=0, padx=5, pady=5)
+        self.search_entry.grid(row=0, column=1, padx=5, pady=5)
         
         # Apply filters button
         self.apply_btn = ctk.CTkButton(
-            search_frame,
+            self.filters_frame,
             text="Apply Filters",
             width=120,
+            height=35,
+            corner_radius=8,
+            font=ctk.CTkFont(weight="bold"),
             command=self.refresh_transactions
         )
-        self.apply_btn.grid(row=0, column=1, padx=5, pady=5)
+        self.apply_btn.grid(row=2, column=4, padx=10, pady=(5, 15), sticky="e")
+        
+        # Reset filters button
+        self.reset_btn = ctk.CTkButton(
+            self.filters_frame,
+            text="Reset",
+            width=80,
+            height=35,
+            corner_radius=8,
+            fg_color="gray60",
+            hover_color="gray50",
+            command=self.reset_filters
+        )
+        self.reset_btn.grid(row=2, column=5, padx=10, pady=(5, 15), sticky="w")
         
         # Load account and category options
         self.load_filter_options()
@@ -482,4 +615,19 @@ class TransactionsView(ctk.CTkFrame):
         """Go to the previous page."""
         if self.current_page > 1:
             self.current_page -= 1
-            self.refresh_transactions() 
+            self.refresh_transactions()
+    
+    def reset_filters(self):
+        """Reset all filters to default values and refresh the transactions."""
+        self.account_var.set("All Accounts")
+        self.category_var.set("All Categories")
+        self.transaction_type_var.set("All Types")
+        self.search_var.set("")
+        self.min_amount_var.set("")
+        self.max_amount_var.set("")
+        
+        # Reset to first page
+        self.current_page = 1
+        
+        # Refresh with reset filters
+        self.refresh_transactions() 
