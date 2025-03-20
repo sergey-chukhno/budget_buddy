@@ -255,13 +255,13 @@ class Account:
         try:
             cursor = connection.cursor()
             
-            # Check if the account exists
+            # First, check if the account exists
             cursor.execute("SELECT id FROM accounts WHERE id = %s", (account_id,))
             if not cursor.fetchone():
                 return False, "Account not found"
             
-            # Delete the account (or set is_active = false for soft delete)
-            cursor.execute("UPDATE accounts SET is_active = false WHERE id = %s", (account_id,))
+            # Delete the account
+            cursor.execute("DELETE FROM accounts WHERE id = %s", (account_id,))
             connection.commit()
             
             return True, "Account deleted successfully"

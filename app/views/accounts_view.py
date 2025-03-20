@@ -8,6 +8,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 # Import models
 from app.models.account import Account
 from app.views.dialogs.add_account_dialog import AddAccountDialog
+from app.views.dialogs.confirm_dialog import ConfirmDialog
 
 class AccountsView(ctk.CTkFrame):
     def __init__(self, master, user):
@@ -167,17 +168,79 @@ class AccountsView(ctk.CTkFrame):
     
     def delete_account(self, account):
         """Delete an account."""
-        # Confirm deletion
-        confirm = ctk.CTkInputDialog(
-            title="Confirm Deletion",
-            text=f"Are you sure you want to delete the account '{account.account_name}'?\nType 'DELETE' to confirm."
-        )
-        result = confirm.get_input()
+        def handle_confirmation(confirmed):
+            if confirmed:
+                success, message = Account.delete_account(account.id)
+                if success:
+                    # Show success message
+                    self.show_message_dialog("Success", "Account deleted successfully!", is_success=True)
+                    # Reload accounts list
+                    self.load_accounts()
+                else:
+                    # Show error message
+                    self.show_message_dialog("Error", f"Failed to delete account: {message}")
         
-        if result == "DELETE":
-            success, message = Account.delete_account(account.id)
-            if success:
-                self.load_accounts()
-            else:
-                print(f"Error deleting account: {message}")
-                # Show error message dialog 
+        # Show confirmation dialog
+        ConfirmDialog(
+            self,
+            "Delete Account",
+            f"Are you sure you want to delete the account '{account.account_name}'?\nThis action cannot be undone.",
+            callback=handle_confirmation
+        )
+    
+    def show_message_dialog(self, title, message, is_success=False):
+        """Show a message dialog with the given title and message."""
+        message_dialog = ctk.CTkToplevel(self)
+        message_dialog.title(title)
+        message_dialog.geometry("300x180")
+        message_dialog.resizable(False, False)
+        message_dialog.transient(self)
+        message_dialog.grab_set()
+        
+        # Make dialog modal
+        message_dialog.focus_set()
+        
+        # Center the dialog
+        message_dialog.update_idletasks()
+        screen_width = message_dialog.winfo_screenwidth()
+        screen_height = message_dialog.winfo_screenheight()
+        x = (screen_width // 2) - (300 // 2)
+        y = (screen_height // 2) - (180 // 2)
+        message_dialog.geometry(f'300x180+{x}+{y}')
+        
+        # Add icon based on success/error
+        if is_success:
+            icon_text = "✓"
+            icon_color = "green"
+        else:
+            icon_text = "✗"
+            icon_color = "red"
+        
+        icon_label = ctk.CTkLabel(
+            message_dialog,
+            text=icon_text,
+            font=ctk.CTkFont(size=48, weight="bold"),
+            text_color=icon_color
+        )
+        icon_label.pack(pady=(20, 10))
+        
+        # Message
+        msg_label = ctk.CTkLabel(
+            message_dialog,
+            text=message,
+            wraplength=250
+        )
+        msg_label.pack(pady=(0, 20))
+        
+        # OK button
+        ok_btn = ctk.CTkButton(
+            message_dialog,
+            text="OK",
+            width=100,
+            command=message_dialog.destroy
+        )
+        ok_btn.pack(pady=(0, 20))
+        
+        # Auto-close on success after delay
+        if is_success:
+            message_dialog.after(2000, message_dialog.destroy) 
