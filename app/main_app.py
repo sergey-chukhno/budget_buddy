@@ -14,6 +14,10 @@ from app.views.transactions_view import TransactionsView
 from app.views.categories_view import CategoriesView
 from app.views.analytics_view import AnalyticsView
 from app.views.settings_view import SettingsView
+from app.views.dialogs.add_funds_dialog import AddFundsDialog
+from app.views.dialogs.withdraw_funds_dialog import WithdrawFundsDialog
+from app.views.dialogs.transfer_funds_dialog import TransferFundsDialog
+from app.views.dialogs.send_funds_dialog import SendFundsDialog
 
 # Import models
 from app.models.user import User
@@ -36,12 +40,13 @@ class MainApp(ctk.CTk):
 
         # Set up grid layout for the window
         self.grid_columnconfigure(1, weight=1)  # Content column takes extra space
-        self.grid_rowconfigure(0, weight=1)     # Make the content expand
+        self.grid_rowconfigure(1, weight=1)     # Make the content expand
 
         # Initialize class variables
         self.current_user = None
         self.current_view = None
         self.sidebar = None
+        self.transaction_buttons_frame = None
         
         # Dictionary to map view names to view classes
         self.views = {
@@ -79,6 +84,7 @@ class MainApp(ctk.CTk):
             
             # Now show the main application with sidebar
             self.create_sidebar()
+            self.create_transaction_buttons()
             self.show_view("dashboard")
             
             return True, "Login successful"
@@ -97,12 +103,74 @@ class MainApp(ctk.CTk):
             
             # Create sidebar and show dashboard
             self.create_sidebar()
+            self.create_transaction_buttons()
             self.show_view("dashboard")
             
             return True, "Registration successful"
         else:
             # Return the error message from user creation
             return False, result
+
+    def create_transaction_buttons(self):
+        """Create the transaction buttons frame at the top level."""
+        if self.transaction_buttons_frame:
+            self.transaction_buttons_frame.destroy()
+
+        # Create transaction buttons frame
+        self.transaction_buttons_frame = ctk.CTkFrame(self, fg_color="transparent")
+        self.transaction_buttons_frame.grid(row=0, column=1, sticky="ew", padx=20, pady=(20, 0))
+        
+        # Add Funds button
+        self.add_funds_btn = ctk.CTkButton(
+            self.transaction_buttons_frame,
+            text="Add Funds",
+            width=120,
+            command=self.show_add_funds_dialog
+        )
+        self.add_funds_btn.pack(side="left", padx=5)
+        
+        # Withdraw Funds button
+        self.withdraw_funds_btn = ctk.CTkButton(
+            self.transaction_buttons_frame,
+            text="Withdraw Funds",
+            width=120,
+            command=self.show_withdraw_funds_dialog
+        )
+        self.withdraw_funds_btn.pack(side="left", padx=5)
+        
+        # Transfer Funds button
+        self.transfer_funds_btn = ctk.CTkButton(
+            self.transaction_buttons_frame,
+            text="Transfer Funds",
+            width=120,
+            command=self.show_transfer_funds_dialog
+        )
+        self.transfer_funds_btn.pack(side="left", padx=5)
+        
+        # Send Funds button
+        self.send_funds_btn = ctk.CTkButton(
+            self.transaction_buttons_frame,
+            text="Send Funds",
+            width=120,
+            command=self.show_send_funds_dialog
+        )
+        self.send_funds_btn.pack(side="left", padx=5)
+
+    def show_add_funds_dialog(self):
+        """Show the Add Funds dialog."""
+        AddFundsDialog(self, self.current_user)
+
+    def show_withdraw_funds_dialog(self):
+        """Show the Withdraw Funds dialog."""
+        WithdrawFundsDialog(self, self.current_user)
+
+    def show_transfer_funds_dialog(self):
+        """Show the Transfer Funds dialog."""
+        TransferFundsDialog(self, self.current_user)
+
+    def show_send_funds_dialog(self):
+        """Show the Send Funds dialog."""
+        SendFundsDialog(self, self.current_user)
 
     def create_sidebar(self):
         """Create the sidebar with navigation buttons."""
@@ -111,7 +179,7 @@ class MainApp(ctk.CTk):
 
         # Create sidebar frame
         self.sidebar = ctk.CTkFrame(self, width=200, corner_radius=0)
-        self.sidebar.grid(row=0, column=0, sticky="nsew")
+        self.sidebar.grid(row=1, column=0, sticky="nsew")
         self.sidebar.grid_rowconfigure(7, weight=1)  # Push logout to bottom
         
         # App logo/title
@@ -164,7 +232,7 @@ class MainApp(ctk.CTk):
         if view_name in self.views:
             view_class = self.views[view_name]
             self.current_view = view_class(self, self.current_user)
-            self.current_view.grid(row=0, column=1, sticky="nsew", padx=0, pady=0)
+            self.current_view.grid(row=1, column=1, sticky="nsew", padx=0, pady=0)
             
             # Update active button
             self.update_active_button(view_name)
@@ -200,10 +268,13 @@ class MainApp(ctk.CTk):
         # Clear user data
         self.current_user = None
         
-        # Remove sidebar
+        # Remove sidebar and transaction buttons
         if self.sidebar:
             self.sidebar.destroy()
             self.sidebar = None
+        if self.transaction_buttons_frame:
+            self.transaction_buttons_frame.destroy()
+            self.transaction_buttons_frame = None
         
         # Show login screen
         self.show_login()
