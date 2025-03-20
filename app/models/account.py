@@ -315,14 +315,13 @@ class Account:
             
             # Construct the query based on date parameters
             query = """
-            SELECT transaction_date, 
+            SELECT DATE(transaction_date) as date, 
                    SUM(CASE 
                        WHEN transaction_type = 'deposit' THEN amount 
                        WHEN transaction_type IN ('withdrawal', 'transfer', 'external_transfer') AND account_id = %s THEN -amount 
                        WHEN transaction_type = 'transfer' AND recipient_account_id = %s THEN amount 
                        ELSE 0 
-                   END) as daily_change,
-                   DATE(transaction_date) as date
+                   END) as daily_change
             FROM transactions
             WHERE (account_id = %s OR recipient_account_id = %s)
             """
@@ -337,7 +336,7 @@ class Account:
                 query += " AND transaction_date <= %s"
                 params.append(end_date)
                 
-            query += " GROUP BY DATE(transaction_date) ORDER BY transaction_date"
+            query += " GROUP BY DATE(transaction_date) ORDER BY date"
             
             cursor.execute(query, params)
             results = cursor.fetchall()
