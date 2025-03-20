@@ -40,6 +40,39 @@ class User:
             return None
 
     @staticmethod
+    def get_user_by_email(email):
+        """Get a user by email."""
+        connection = User.get_connection()
+        if not connection:
+            return None
+
+        try:
+            cursor = connection.cursor(dictionary=True)
+            
+            cursor.execute("""
+            SELECT id, email, first_name, last_name, role_id
+            FROM users WHERE email = %s
+            """, (email,))
+            
+            user_data = cursor.fetchone()
+            
+            if user_data:
+                return User(
+                    id=user_data['id'],
+                    name=f"{user_data['first_name']} {user_data['last_name']}",
+                    email=user_data['email'],
+                    role_id=user_data['role_id']
+                )
+            return None
+        except Error as e:
+            print(f"Error getting user by email: {e}")
+            return None
+        finally:
+            if connection.is_connected():
+                cursor.close()
+                connection.close()
+
+    @staticmethod
     def create_user(email, password, first_name, last_name, phone=None, address=None, role_id=2):
         """Create a new user in the database."""
         connection = User.get_connection()
@@ -74,6 +107,11 @@ class User:
                 password_hash=hashed_password.decode('utf-8'),
                 role_id=role_id
             )
+            
+            # Assign the new user to the admin
+            admin = User.get_user_by_email("admin@billionnaires.com")
+            if admin and admin.id:
+                User.assign_client_to_admin(admin.id, user_id)
             
             return True, user
         except Error as e:
@@ -162,7 +200,7 @@ class User:
     @staticmethod
     def get_clients_for_admin(admin_id):
         """Get all clients assigned to an admin."""
-        connection = get_connection()
+        connection = User.get_connection()
         if not connection:
             return []
 
@@ -183,10 +221,7 @@ class User:
                 client = User(
                     id=client_data['id'],
                     email=client_data['email'],
-                    first_name=client_data['first_name'],
-                    last_name=client_data['last_name'],
-                    phone=client_data['phone'],
-                    address=client_data['address'],
+                    name=f"{client_data['first_name']} {client_data['last_name']}",
                     role_id=client_data['role_id']
                 )
                 clients.append(client)
@@ -204,7 +239,7 @@ class User:
     @staticmethod
     def assign_client_to_admin(admin_id, client_id):
         """Assign a client to an admin."""
-        connection = get_connection()
+        connection = User.get_connection()
         if not connection:
             return False, "Database connection error"
 
@@ -246,7 +281,7 @@ class User:
         if not self.id:
             return False, "User ID not set"
 
-        connection = get_connection()
+        connection = User.get_connection()
         if not connection:
             return False, "Database connection error"
 
@@ -306,7 +341,7 @@ class User:
         if not self.id:
             return False, "User ID not set"
 
-        connection = get_connection()
+        connection = User.get_connection()
         if not connection:
             return False, "Database connection error"
 
