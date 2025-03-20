@@ -233,7 +233,7 @@ class WithdrawFundsDialog(ctk.CTkToplevel):
                 account_id=account.id,
                 category_id=category.id,
                 amount=amount,
-                transaction_type="withdraw",
+                transaction_type="withdrawal",
                 description=description
             )
             

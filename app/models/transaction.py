@@ -718,16 +718,16 @@ class Transaction:
             current_balance = float(account[1])
             
             # Calculate new balance based on transaction type
-            if transaction_type in ["withdraw", "send", "transfer_out"]:
+            if transaction_type in ["withdrawal", "transfer", "external_transfer"]:
                 if current_balance < float(amount):
                     connection.rollback()
                     return False, "Insufficient funds"
                 new_balance = current_balance - float(amount)
-            elif transaction_type in ["deposit", "receive", "transfer_in"]:
+            elif transaction_type == "deposit":
                 new_balance = current_balance + float(amount)
             else:
                 connection.rollback()
-                return False, "Invalid transaction type"
+                return False, f"Invalid transaction type: {transaction_type}"
                 
             # Update the account balance
             cursor.execute(
@@ -736,7 +736,7 @@ class Transaction:
             )
             
             # If it's a transfer, also update the recipient account
-            if transaction_type == "transfer_out" and recipient_account_id:
+            if transaction_type == "transfer" and recipient_account_id:
                 # Check if recipient account exists
                 cursor.execute(
                     "SELECT id, balance FROM accounts WHERE id = %s",
