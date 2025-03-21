@@ -75,16 +75,32 @@ class SettingsView(ctk.CTkFrame):
         user_info_frame = ctk.CTkFrame(account_frame)
         user_info_frame.pack(fill="x", padx=10, pady=10)
         
-        # Name fields
-        name_frame = ctk.CTkFrame(user_info_frame, fg_color="transparent")
-        name_frame.pack(fill="x", pady=10)
+        # Extract first and last name from user.name
+        name_parts = self.user.name.split(" ", 1) if self.user.name else ["", ""]
+        first_name = name_parts[0] if len(name_parts) > 0 else ""
+        last_name = name_parts[1] if len(name_parts) > 1 else ""
         
-        name_label = ctk.CTkLabel(name_frame, text="Full Name:", width=120, anchor="w")
-        name_label.pack(side="left", padx=(10, 0))
+        # First name field
+        first_name_frame = ctk.CTkFrame(user_info_frame, fg_color="transparent")
+        first_name_frame.pack(fill="x", pady=10)
         
-        self.name_entry = ctk.CTkEntry(name_frame, placeholder_text="Enter your full name")
-        self.name_entry.pack(side="left", fill="x", expand=True, padx=10)
-        self.name_entry.insert(0, self.user.name)
+        first_name_label = ctk.CTkLabel(first_name_frame, text="First Name:", width=120, anchor="w")
+        first_name_label.pack(side="left", padx=(10, 0))
+        
+        self.first_name_entry = ctk.CTkEntry(first_name_frame, placeholder_text="Enter your first name")
+        self.first_name_entry.pack(side="left", fill="x", expand=True, padx=10)
+        self.first_name_entry.insert(0, first_name)
+        
+        # Last name field
+        last_name_frame = ctk.CTkFrame(user_info_frame, fg_color="transparent")
+        last_name_frame.pack(fill="x", pady=10)
+        
+        last_name_label = ctk.CTkLabel(last_name_frame, text="Last Name:", width=120, anchor="w")
+        last_name_label.pack(side="left", padx=(10, 0))
+        
+        self.last_name_entry = ctk.CTkEntry(last_name_frame, placeholder_text="Enter your last name")
+        self.last_name_entry.pack(side="left", fill="x", expand=True, padx=10)
+        self.last_name_entry.insert(0, last_name)
         
         # Email field
         email_frame = ctk.CTkFrame(user_info_frame, fg_color="transparent")
@@ -440,11 +456,83 @@ class SettingsView(ctk.CTkFrame):
     
     def save_settings(self):
         """Save user settings."""
-        print("Settings would be saved here")
-        # In a complete implementation, this would validate and save all settings
+        # Get the values from the input fields
+        first_name = self.first_name_entry.get().strip()
+        last_name = self.last_name_entry.get().strip()
+        email = self.email_entry.get().strip()
         
-        # Show success message
-        self.show_message("Settings saved successfully", "success")
+        # Validation
+        if not first_name:
+            self.show_message("First name cannot be empty", "error")
+            return
+            
+        if not last_name:
+            self.show_message("Last name cannot be empty", "error")
+            return
+            
+        if not email:
+            self.show_message("Email cannot be empty", "error")
+            return
+            
+        if "@" not in email or "." not in email:
+            self.show_message("Please enter a valid email address", "error")
+            return
+        
+        # Update user info in database
+        success = self.update_user_info(first_name, last_name, email)
+        
+        if success:
+            self.show_message("Settings saved successfully", "success")
+        
+    def update_user_info(self, first_name, last_name, email):
+        """Update user information in the database."""
+        # Check if email has changed
+        email_changed = email != self.user.email
+        
+        # Create a connection to execute SQL
+        connection = User.get_connection()
+        if not connection:
+            self.show_message("Database connection error", "error")
+            return False
+
+        try:
+            cursor = connection.cursor()
+            
+            # Check if email already exists for another user
+            if email_changed:
+                cursor.execute("SELECT id FROM users WHERE email = %s AND id != %s", (email, self.user.id))
+                if cursor.fetchone():
+                    self.show_message("Email already used by another account", "error")
+                    return False
+            
+            # Update user information
+            query = """
+            UPDATE users 
+            SET first_name = %s, last_name = %s, email = %s
+            WHERE id = %s
+            """
+            cursor.execute(query, (first_name, last_name, email, self.user.id))
+            connection.commit()
+            
+            # Update the user object
+            self.user.name = f"{first_name} {last_name}"
+            self.user.email = email
+            
+            # If email changed, update login credentials in the application
+            if email_changed:
+                # In a real implementation, this might involve updating session info
+                # or requiring a re-login
+                print(f"[INFO] User email changed from {self.user.email} to {email}")
+            
+            return True
+            
+        except Exception as e:
+            self.show_message(f"Error updating user information: {str(e)}", "error")
+            return False
+        finally:
+            if connection.is_connected():
+                cursor.close()
+                connection.close()
     
     def change_password(self):
         """Change user password."""
