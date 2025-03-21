@@ -127,16 +127,118 @@ class SettingsView(ctk.CTkFrame):
         )
         currency_dropdown.pack(side="left", padx=10)
         
-        # Data export option
-        export_frame = ctk.CTkFrame(account_frame, fg_color="transparent")
-        export_frame.pack(fill="x", pady=20)
+        # Timezone preference
+        timezone_frame = ctk.CTkFrame(account_frame, fg_color="transparent")
+        timezone_frame.pack(fill="x", pady=10)
         
-        export_button = ctk.CTkButton(
-            export_frame,
-            text="Export Account Data",
-            command=self.export_account_data
+        timezone_label = ctk.CTkLabel(timezone_frame, text="Timezone:", width=120, anchor="w")
+        timezone_label.pack(side="left", padx=(10, 0))
+        
+        timezones = [
+            "UTC (GMT+0)", 
+            "America/New_York (GMT-5/4)", 
+            "America/Chicago (GMT-6/5)", 
+            "America/Denver (GMT-7/6)", 
+            "America/Los_Angeles (GMT-8/7)",
+            "Europe/London (GMT+0/1)",
+            "Europe/Paris (GMT+1/2)",
+            "Asia/Tokyo (GMT+9)",
+            "Australia/Sydney (GMT+10/11)"
+        ]
+        self.timezone_var = ctk.StringVar(value=timezones[0])
+        
+        timezone_dropdown = ctk.CTkOptionMenu(
+            timezone_frame,
+            variable=self.timezone_var,
+            values=timezones,
+            width=200
         )
-        export_button.pack(side="left", padx=10)
+        timezone_dropdown.pack(side="left", padx=10)
+        
+        # Divider
+        divider2 = ctk.CTkFrame(account_frame, height=2, fg_color="gray30")
+        divider2.pack(fill="x", padx=10, pady=20)
+        
+        # Login information section
+        login_info_title = ctk.CTkLabel(
+            account_frame,
+            text="Login Information",
+            font=ctk.CTkFont(size=18, weight="bold")
+        )
+        login_info_title.pack(anchor="w", pady=(0, 20))
+        
+        # Login info frame
+        login_info_frame = ctk.CTkFrame(account_frame)
+        login_info_frame.pack(fill="x", padx=10, pady=10)
+        
+        # Last login time
+        last_login_frame = ctk.CTkFrame(login_info_frame, fg_color="transparent")
+        last_login_frame.pack(fill="x", pady=5)
+        
+        last_login_label = ctk.CTkLabel(
+            last_login_frame, 
+            text="Last Login:", 
+            width=120, 
+            anchor="w",
+            font=ctk.CTkFont(weight="bold")
+        )
+        last_login_label.pack(side="left", padx=(10, 0))
+        
+        # In a real implementation, this would be dynamically retrieved from the database
+        last_login_time = "2025-03-21 07:08:35"
+        
+        last_login_value = ctk.CTkLabel(
+            last_login_frame,
+            text=last_login_time,
+            anchor="w"
+        )
+        last_login_value.pack(side="left", padx=10)
+        
+        # Current session start
+        session_frame = ctk.CTkFrame(login_info_frame, fg_color="transparent")
+        session_frame.pack(fill="x", pady=5)
+        
+        session_label = ctk.CTkLabel(
+            session_frame, 
+            text="Current Session:", 
+            width=120, 
+            anchor="w",
+            font=ctk.CTkFont(weight="bold")
+        )
+        session_label.pack(side="left", padx=(10, 0))
+        
+        # In a real implementation, this would be the current session start time
+        session_start = "2025-03-21 07:09:35"
+        
+        session_value = ctk.CTkLabel(
+            session_frame,
+            text=session_start,
+            anchor="w"
+        )
+        session_value.pack(side="left", padx=10)
+        
+        # Device information
+        device_frame = ctk.CTkFrame(login_info_frame, fg_color="transparent")
+        device_frame.pack(fill="x", pady=5)
+        
+        device_label = ctk.CTkLabel(
+            device_frame, 
+            text="Device:", 
+            width=120, 
+            anchor="w",
+            font=ctk.CTkFont(weight="bold")
+        )
+        device_label.pack(side="left", padx=(10, 0))
+        
+        # In a real implementation, this would be detected from the user's system
+        device_info = "MacOS 24.3.0"
+        
+        device_value = ctk.CTkLabel(
+            device_frame,
+            text=device_info,
+            anchor="w"
+        )
+        device_value.pack(side="left", padx=10)
     
     def setup_security_tab(self):
         """Set up the Security tab with password and security settings."""
@@ -367,11 +469,6 @@ class SettingsView(ctk.CTkFrame):
         self.confirm_pw_entry.delete(0, "end")
         
         self.show_message("Password changed successfully", "success")
-    
-    def export_account_data(self):
-        """Export user account data."""
-        # This would typically open a file dialog and export data
-        self.show_message("Account data export initiated", "info")
     
     def show_message(self, message, message_type="info"):
         """Show a message to the user."""
