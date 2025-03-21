@@ -30,8 +30,7 @@ class LoginView(ctk.CTkFrame):
             self.login_frame,
             image=image_ctk, 
             text="", 
-            font=ctk.CTkFont(size=24, weight="bold")
-        )
+            )
         self.logo_label.grid(row=0, column=0, padx=30, pady=(30, 15))
         
         # Login subtitle
@@ -44,7 +43,7 @@ class LoginView(ctk.CTkFrame):
         
         # Login form
         self.login_form_frame = ctk.CTkFrame(self.login_frame, fg_color="transparent")
-        self.login_form_frame.grid(row=2, column=0, padx=30, pady=15, sticky="ew")
+        self.login_form_frame.grid(row=2, column=0, padx=30, pady=15)
         self.login_form_frame.grid_columnconfigure(0, weight=1)
         
         # Email field
