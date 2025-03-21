@@ -20,12 +20,31 @@ class RegisterView(ctk.CTkFrame):
         self.register_frame.grid_columnconfigure(0, weight=1)
         self.register_frame.grid_rowconfigure(3, weight=1)
         
+        # Load background image
+        bg_image = ctk.CTkImage(
+        Image.open("fin_tracker_sql/assets/background_register.png"),
+        size=(1980,1980))
+
+        self.bg_label = ctk.CTkLabel(self.register_frame, image=bg_image, text="")
+        self.bg_label.place(relwidth=1,relheight=1)
         # Logo and title
         self.logo_label = ctk.CTkLabel(
             self.register_frame, 
             text="Billionnaires Budget Buddy", 
             font=ctk.CTkFont(size=24, weight="bold")
         )
+
+        # Logo and title
+        logo = Image.open("fin_tracker_sql/assets/new_logo.png")
+        image_ctk = ctk.CTkImage(light_image=logo, dark_image=logo, size=(200, 200))
+        self.logo_label = ctk.CTkLabel(
+            self.register_frame,
+            image=image_ctk, 
+            text="", 
+            )
+        self.logo_label.grid(row=0, column=0, padx=30, pady=(30, 15))
+
+
         self.logo_label.grid(row=0, column=0, padx=30, pady=(30, 15))
         
         # Register subtitle
@@ -37,48 +56,51 @@ class RegisterView(ctk.CTkFrame):
         self.subtitle_label.grid(row=1, column=0, padx=30, pady=(0, 15))
         
         # Register form
-        self.register_form_frame = ctk.CTkFrame(self.register_frame, fg_color="transparent")
+        self.register_form_frame = ctk.CTkFrame(self.register_frame, fg_color="white")
         self.register_form_frame.grid(row=2, column=0, padx=30, pady=15, sticky="ew")
         self.register_form_frame.grid_columnconfigure((0, 1), weight=1)
         
+        
+
+
         # Email field
-        self.email_label = ctk.CTkLabel(self.register_form_frame, text="Email:")
+        self.email_label = ctk.CTkLabel(self.register_form_frame, text="Email:",text_color="#3a7ebf")
         self.email_label.grid(row=0, column=0, padx=10, pady=(0, 5), sticky="w", columnspan=2)
-        self.email_entry = ctk.CTkEntry(self.register_form_frame, placeholder_text="Enter your email")
+        self.email_entry = ctk.CTkEntry(self.register_form_frame, placeholder_text="Enter your email",text_color="#3a7ebf")
         self.email_entry.grid(row=1, column=0, padx=10, pady=(0, 15), sticky="ew", columnspan=2)
         
         # Password field
-        self.password_label = ctk.CTkLabel(self.register_form_frame, text="Password:")
+        self.password_label = ctk.CTkLabel(self.register_form_frame, text="Password:",text_color="#3a7ebf")
         self.password_label.grid(row=2, column=0, padx=10, pady=(0, 5), sticky="w")
         self.password_entry = ctk.CTkEntry(self.register_form_frame, placeholder_text="Enter your password", show="*")
         self.password_entry.grid(row=3, column=0, padx=10, pady=(0, 15), sticky="ew")
         
         # Confirm password field
-        self.confirm_password_label = ctk.CTkLabel(self.register_form_frame, text="Confirm Password:")
+        self.confirm_password_label = ctk.CTkLabel(self.register_form_frame, text="Confirm Password:",text_color="#3a7ebf")
         self.confirm_password_label.grid(row=2, column=1, padx=10, pady=(0, 5), sticky="w")
         self.confirm_password_entry = ctk.CTkEntry(self.register_form_frame, placeholder_text="Confirm your password", show="*")
         self.confirm_password_entry.grid(row=3, column=1, padx=10, pady=(0, 15), sticky="ew")
         
         # First name field
-        self.first_name_label = ctk.CTkLabel(self.register_form_frame, text="First Name:")
+        self.first_name_label = ctk.CTkLabel(self.register_form_frame, text="First Name:",text_color="#3a7ebf")
         self.first_name_label.grid(row=4, column=0, padx=10, pady=(0, 5), sticky="w")
         self.first_name_entry = ctk.CTkEntry(self.register_form_frame, placeholder_text="Enter your first name")
         self.first_name_entry.grid(row=5, column=0, padx=10, pady=(0, 15), sticky="ew")
         
         # Last name field
-        self.last_name_label = ctk.CTkLabel(self.register_form_frame, text="Last Name:")
+        self.last_name_label = ctk.CTkLabel(self.register_form_frame, text="Last Name:",text_color="#3a7ebf")
         self.last_name_label.grid(row=4, column=1, padx=10, pady=(0, 5), sticky="w")
         self.last_name_entry = ctk.CTkEntry(self.register_form_frame, placeholder_text="Enter your last name")
         self.last_name_entry.grid(row=5, column=1, padx=10, pady=(0, 15), sticky="ew")
         
         # Phone field
-        self.phone_label = ctk.CTkLabel(self.register_form_frame, text="Phone:")
+        self.phone_label = ctk.CTkLabel(self.register_form_frame, text="Phone:",text_color="#3a7ebf")
         self.phone_label.grid(row=6, column=0, padx=10, pady=(0, 5), sticky="w")
         self.phone_entry = ctk.CTkEntry(self.register_form_frame, placeholder_text="Enter your phone number")
         self.phone_entry.grid(row=7, column=0, padx=10, pady=(0, 15), sticky="ew")
         
         # Address field
-        self.address_label = ctk.CTkLabel(self.register_form_frame, text="Address:")
+        self.address_label = ctk.CTkLabel(self.register_form_frame, text="Address:",text_color="#3a7ebf")
         self.address_label.grid(row=6, column=1, padx=10, pady=(0, 5), sticky="w")
         self.address_entry = ctk.CTkEntry(self.register_form_frame, placeholder_text="Enter your address")
         self.address_entry.grid(row=7, column=1, padx=10, pady=(0, 15), sticky="ew")
