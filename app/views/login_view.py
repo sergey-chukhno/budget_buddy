@@ -20,6 +20,15 @@ class LoginView(ctk.CTkFrame):
         self.login_frame.grid_columnconfigure(0, weight=1)
         self.login_frame.grid_rowconfigure(4, weight=1)
         
+        bg_image = ctk.CTkImage(
+        Image.open("fin_tracker_sql/assets/background_login.png"),  # Remplace par le chemin de ton image
+        size=(1050,750)  # Adapter à la fenêtre
+        )
+
+        # Ajouter un label avec l'image de fond
+        self.bg_label = ctk.CTkLabel(self.login_frame, image=bg_image, text="")
+        self.bg_label.place(relwidth=1,relheight=1)
+        
         # Logo and title
         logo = Image.open("fin_tracker_sql/assets/new_logo.png")
         image_ctk = ctk.CTkImage(light_image=logo, dark_image=logo, size=(200, 200))
