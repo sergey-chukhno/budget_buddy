@@ -540,6 +540,7 @@ class SettingsView(ctk.CTkFrame):
         new_password = self.new_pw_entry.get()
         confirm_password = self.confirm_pw_entry.get()
         
+        # Validate inputs
         if not current_password or not new_password or not confirm_password:
             self.show_message("Please fill in all password fields", "error")
             return
@@ -548,15 +549,21 @@ class SettingsView(ctk.CTkFrame):
             self.show_message("New passwords do not match", "error")
             return
             
-        # In a real implementation, this would verify the current password
-        # and update with the new password in the database
+        if len(new_password) < 8:
+            self.show_message("New password must be at least 8 characters long", "error")
+            return
         
-        # Clear the fields
-        self.current_pw_entry.delete(0, "end")
-        self.new_pw_entry.delete(0, "end")
-        self.confirm_pw_entry.delete(0, "end")
+        # Attempt to change password in database
+        success, message = self.user.change_password(current_password, new_password)
         
-        self.show_message("Password changed successfully", "success")
+        if success:
+            # Clear the fields
+            self.current_pw_entry.delete(0, "end")
+            self.new_pw_entry.delete(0, "end")
+            self.confirm_pw_entry.delete(0, "end")
+            self.show_message("Password changed successfully", "success")
+        else:
+            self.show_message(message, "error")
     
     def show_message(self, message, message_type="info"):
         """Show a message to the user."""
