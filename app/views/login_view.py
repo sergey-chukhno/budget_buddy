@@ -23,7 +23,7 @@ class LoginView(ctk.CTkFrame):
         self.login_frame.grid_rowconfigure(4, weight=1)
         
         # Logo and title
-        logo = Image.open("C:/Users/belaz/Documents/developpement/Github/fin_tracker_sql/assets/Logo500.png")
+        logo = Image.open("C:/Users/belaz/Documents/developpement/Github/fin_tracker_sql/assets/BBBLogo500.png")
         image_ctk = ctk.CTkImage(light_image=logo, dark_image=logo, size=(200, 200))
 
         self.logo_label = ctk.CTkLabel(
