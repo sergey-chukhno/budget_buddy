@@ -15,15 +15,21 @@ class LoginView(ctk.CTkFrame):
         self.grid_rowconfigure(0, weight=1)
         
         # Create a main frame for the login form
+        
+        
         self.login_frame = ctk.CTkFrame(self, corner_radius=15)
         self.login_frame.grid(row=0, column=0, padx=20, pady=20, sticky="nsew")
         self.login_frame.grid_columnconfigure(0, weight=1)
         self.login_frame.grid_rowconfigure(4, weight=1)
         
         # Logo and title
+        logo = Image.open("C:/Users/belaz/Documents/developpement/Github/fin_tracker_sql/assets/Logo500.png")
+        image_ctk = ctk.CTkImage(light_image=logo, dark_image=logo, size=(200, 200))
+
         self.logo_label = ctk.CTkLabel(
-            self.login_frame, 
-            text="Billionnaires Budget Buddy", 
+            self.login_frame,
+            image=image_ctk, 
+            text="", 
             font=ctk.CTkFont(size=24, weight="bold")
         )
         self.logo_label.grid(row=0, column=0, padx=30, pady=(30, 15))
