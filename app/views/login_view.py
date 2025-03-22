@@ -30,7 +30,7 @@ class LoginView(ctk.CTkFrame):
         
         # Create a main transparent frame for the login form
         self.login_form_frame = ctk.CTkFrame(self, fg_color="transparent", corner_radius=15)
-        self.login_form_frame.place(relx=0.5, rely=0.5, anchor="center", relwidth=0.4, relheight=0.6)
+        self.login_form_frame.place(relx=0.5, rely=0.5, anchor="center", relwidth=0.3, relheight=0.6)
         self.login_form_frame.grid_columnconfigure(0, weight=1)
         
         # Title text
@@ -63,7 +63,8 @@ class LoginView(ctk.CTkFrame):
         self.email_container = ctk.CTkFrame(
             self.login_form_frame,
             corner_radius=8,
-            fg_color=("#E0E0E0", "#3c3c3c")  # Light and dark mode colors
+            fg_color=("#E0E0E0", "#3c3c3c"),  # Light and dark mode colors
+            width=250  # Set specific width for container
         )
         self.email_container.pack(fill="x", padx=20, pady=(0, 15))
         
@@ -72,7 +73,8 @@ class LoginView(ctk.CTkFrame):
             self.email_container,
             placeholder_text="Enter your email",
             border_width=0,
-            fg_color="transparent"
+            fg_color="transparent",
+            width=230  # Set specific width for entry
         )
         self.email_entry.pack(fill="x", padx=10, pady=8)
         
@@ -88,7 +90,8 @@ class LoginView(ctk.CTkFrame):
         self.password_container = ctk.CTkFrame(
             self.login_form_frame,
             corner_radius=8,
-            fg_color=("#E0E0E0", "#3c3c3c")  # Light and dark mode colors
+            fg_color=("#E0E0E0", "#3c3c3c"),  # Light and dark mode colors
+            width=250  # Set specific width for container
         )
         self.password_container.pack(fill="x", padx=20, pady=(0, 15))
         
@@ -98,7 +101,8 @@ class LoginView(ctk.CTkFrame):
             placeholder_text="Enter your password",
             show="*",
             border_width=0,
-            fg_color="transparent"
+            fg_color="transparent",
+            width=230  # Set specific width for entry
         )
         self.password_entry.pack(fill="x", padx=10, pady=8)
         
@@ -119,7 +123,8 @@ class LoginView(ctk.CTkFrame):
             command=self.login,
             fg_color="#3a7ebf",
             hover_color="#2b5f8f",
-            corner_radius=8
+            corner_radius=8,
+            width=250  # Set specific width for button
         )
         self.login_button.pack(fill="x", padx=20, pady=(0, 15))
         

@@ -50,19 +50,26 @@ class MainView(ctk.CTkFrame):
         self.sidebar_frame.grid(row=0, column=0, rowspan=2, sticky="nsew")
         self.sidebar_frame.grid_rowconfigure(6, weight=1)
         
-        # Logo
+        # Load and display logo image
+        self.logo_image = ctk.CTkImage(
+            light_image=Image.open("resources/images/logo.png"),
+            dark_image=Image.open("resources/images/logo.png"),
+            size=(150, 60)  # Adjust size as needed
+        )
+        
         self.logo_label = ctk.CTkLabel(
             self.sidebar_frame, 
-            text="Budget Buddy",
-            font=ctk.CTkFont(size=20, weight="bold")
+            text="",
+            image=self.logo_image
         )
-        self.logo_label.grid(row=0, column=0, padx=20, pady=(20, 10))
+        self.logo_label.grid(row=0, column=0, padx=20, pady=(20, 5))
         
         # User info
         self.user_frame = ctk.CTkFrame(self.sidebar_frame, fg_color="transparent")
-        self.user_frame.grid(row=1, column=0, padx=20, pady=(10, 20), sticky="ew")
+        self.user_frame.grid(row=1, column=0, padx=20, pady=(5, 20), sticky="ew")
         
         user_name = f"{self.user.first_name} {self.user.last_name}"
+        user_id = f"ID: {self.user.id}"
         user_role = "Admin" if self.user.is_admin() else "Client"
         
         self.user_name_label = ctk.CTkLabel(
@@ -72,13 +79,21 @@ class MainView(ctk.CTkFrame):
         )
         self.user_name_label.grid(row=0, column=0, sticky="w")
         
+        self.user_id_label = ctk.CTkLabel(
+            self.user_frame,
+            text=user_id,
+            text_color=("gray50", "gray70"),
+            font=ctk.CTkFont(size=12)
+        )
+        self.user_id_label.grid(row=1, column=0, sticky="w")
+        
         self.user_role_label = ctk.CTkLabel(
             self.user_frame,
             text=user_role,
             text_color=("gray50", "gray70"),
             font=ctk.CTkFont(size=12)
         )
-        self.user_role_label.grid(row=1, column=0, sticky="w")
+        self.user_role_label.grid(row=2, column=0, sticky="w")
         
         # Navigation
         self.nav_label = ctk.CTkLabel(

@@ -1,6 +1,7 @@
 import customtkinter as ctk
 import sys
 import os
+from PIL import Image, ImageDraw
 
 # Add the parent directory to the path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -110,24 +111,75 @@ class MainApp(ctk.CTk):
         # Create sidebar frame
         self.sidebar = ctk.CTkFrame(self, width=200, corner_radius=0)
         self.sidebar.grid(row=0, column=0, sticky="nsew")
-        self.sidebar.grid_rowconfigure(6, weight=1)  # Push logout to bottom
+        self.sidebar.grid_rowconfigure(7, weight=1)  # Push logout to bottom
         
-        # App logo/title
+        # Load and display logo image
+        original_logo = Image.open("resources/images/logo.png")
+        
+        # Create a circular mask
+        width, height = original_logo.size
+        size = min(width, height)
+        mask = Image.new('L', (width, height), 0)
+        draw = ImageDraw.Draw(mask) 
+        draw.ellipse((0, 0, width, height), fill=255)
+        
+        # Apply circular mask to logo
+        circular_logo = original_logo.copy()
+        circular_logo.putalpha(mask)
+        
+        self.logo_image = ctk.CTkImage(
+            light_image=circular_logo,
+            dark_image=circular_logo,
+            size=(180, 180)  # Make it square for circular appearance
+        )
+        
         self.logo_label = ctk.CTkLabel(
             self.sidebar, 
-            text="Budget Buddy",
-            font=ctk.CTkFont(size=20, weight="bold")
+            text="",
+            image=self.logo_image,
+            corner_radius=90  # Half the width/height for circular appearance
         )
-        self.logo_label.grid(row=0, column=0, padx=20, pady=(20, 20))
+        self.logo_label.grid(row=0, column=0, padx=20, pady=(20, 5))
+        
+        # User info frame
+        self.user_frame = ctk.CTkFrame(self.sidebar, fg_color="transparent")
+        self.user_frame.grid(row=1, column=0, padx=20, pady=(5, 20), sticky="ew")
+        
+        # Display user information
+        if self.current_user:
+            user_name = f"{self.current_user.first_name} {self.current_user.last_name}"
+            user_id = f"ID: {self.current_user.id}"
+            user_role = "Admin" if self.current_user.is_admin() else "Client"
+            
+            self.user_name_label = ctk.CTkLabel(
+                self.user_frame,
+                text=user_name,
+                font=ctk.CTkFont(size=14, weight="bold")
+            )
+            self.user_name_label.grid(row=0, column=0, sticky="w")
+            
+            self.user_id_label = ctk.CTkLabel(
+                self.user_frame,
+                text=user_id,
+                text_color=("gray50", "gray70"),
+                font=ctk.CTkFont(size=12)
+            )
+            self.user_id_label.grid(row=1, column=0, sticky="w")
+            
+            self.user_role_label = ctk.CTkLabel(
+                self.user_frame,
+                text=user_role,
+                text_color=("gray50", "gray70"),
+                font=ctk.CTkFont(size=12)
+            )
+            self.user_role_label.grid(row=2, column=0, sticky="w")
 
         # Navigation buttons
-        self.dashboard_btn = self.create_nav_button("Dashboard", 1, "dashboard")
-        self.accounts_btn = self.create_nav_button("Accounts", 2, "accounts")
-        self.transactions_btn = self.create_nav_button("Transactions", 3, "transactions")
-        self.analytics_btn = self.create_nav_button("Analytics", 4, "analytics")
-        
-        # Settings button
-        self.settings_btn = self.create_nav_button("Settings", 5, "settings")
+        self.dashboard_btn = self.create_nav_button("Dashboard", 2, "dashboard")
+        self.accounts_btn = self.create_nav_button("Accounts", 3, "accounts")
+        self.transactions_btn = self.create_nav_button("Transactions", 4, "transactions")
+        self.analytics_btn = self.create_nav_button("Analytics", 5, "analytics")
+        self.settings_btn = self.create_nav_button("Settings", 6, "settings")
         
         # Logout button
         self.logout_btn = ctk.CTkButton(
@@ -138,7 +190,7 @@ class MainApp(ctk.CTk):
             text_color=("gray10", "#DCE4EE"),
             command=self.handle_logout
         )
-        self.logout_btn.grid(row=7, column=0, padx=20, pady=20, sticky="ew")
+        self.logout_btn.grid(row=8, column=0, padx=20, pady=20, sticky="ew")
 
     def create_nav_button(self, text, row, view_name):
         """Create a navigation button for the sidebar."""

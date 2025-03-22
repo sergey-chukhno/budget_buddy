@@ -30,7 +30,7 @@ class RegisterView(ctk.CTkFrame):
         
         # Create a main transparent frame for the register form
         self.register_form_frame = ctk.CTkFrame(self, fg_color="transparent", corner_radius=15)
-        self.register_form_frame.place(relx=0.5, rely=0.5, anchor="center", relwidth=0.6, relheight=0.65)
+        self.register_form_frame.place(relx=0.5, rely=0.5, anchor="center", relwidth=0.5, relheight=0.65)
         self.register_form_frame.grid_columnconfigure((0, 1), weight=1)
         
         # Title text
@@ -63,7 +63,8 @@ class RegisterView(ctk.CTkFrame):
         self.email_container = ctk.CTkFrame(
             self.register_form_frame,
             corner_radius=8,
-            fg_color=("#E0E0E0", "#3c3c3c")  # Light and dark mode colors
+            fg_color=("#E0E0E0", "#3c3c3c"),  # Light and dark mode colors
+            width=400  # Set specific width for container
         )
         self.email_container.grid(row=1, column=0, padx=10, pady=(0, 15), sticky="ew", columnspan=2)
         
@@ -72,7 +73,8 @@ class RegisterView(ctk.CTkFrame):
             self.email_container,
             placeholder_text="Enter your email",
             border_width=0,
-            fg_color="transparent"
+            fg_color="transparent",
+            width=380  # Set specific width for entry
         )
         self.email_entry.pack(fill="x", padx=10, pady=8)
         
@@ -88,7 +90,8 @@ class RegisterView(ctk.CTkFrame):
         self.password_container = ctk.CTkFrame(
             self.register_form_frame,
             corner_radius=8,
-            fg_color=("#E0E0E0", "#3c3c3c")  # Light and dark mode colors
+            fg_color=("#E0E0E0", "#3c3c3c"),  # Light and dark mode colors
+            width=190  # Set specific width for container
         )
         self.password_container.grid(row=3, column=0, padx=10, pady=(0, 15), sticky="ew")
         
@@ -98,7 +101,8 @@ class RegisterView(ctk.CTkFrame):
             placeholder_text="Enter your password",
             show="*",
             border_width=0,
-            fg_color="transparent"
+            fg_color="transparent",
+            width=170  # Set specific width for entry
         )
         self.password_entry.pack(fill="x", padx=10, pady=8)
         
@@ -114,7 +118,8 @@ class RegisterView(ctk.CTkFrame):
         self.confirm_password_container = ctk.CTkFrame(
             self.register_form_frame,
             corner_radius=8,
-            fg_color=("#E0E0E0", "#3c3c3c")  # Light and dark mode colors
+            fg_color=("#E0E0E0", "#3c3c3c"),  # Light and dark mode colors
+            width=190  # Set specific width for container
         )
         self.confirm_password_container.grid(row=3, column=1, padx=10, pady=(0, 15), sticky="ew")
         
@@ -124,7 +129,8 @@ class RegisterView(ctk.CTkFrame):
             placeholder_text="Confirm your password",
             show="*",
             border_width=0,
-            fg_color="transparent"
+            fg_color="transparent",
+            width=170  # Set specific width for entry
         )
         self.confirm_password_entry.pack(fill="x", padx=10, pady=8)
         
@@ -140,7 +146,8 @@ class RegisterView(ctk.CTkFrame):
         self.first_name_container = ctk.CTkFrame(
             self.register_form_frame,
             corner_radius=8,
-            fg_color=("#E0E0E0", "#3c3c3c")  # Light and dark mode colors
+            fg_color=("#E0E0E0", "#3c3c3c"),  # Light and dark mode colors
+            width=190  # Set specific width for container
         )
         self.first_name_container.grid(row=5, column=0, padx=10, pady=(0, 15), sticky="ew")
         
@@ -149,7 +156,8 @@ class RegisterView(ctk.CTkFrame):
             self.first_name_container,
             placeholder_text="Enter your first name",
             border_width=0,
-            fg_color="transparent"
+            fg_color="transparent",
+            width=170  # Set specific width for entry
         )
         self.first_name_entry.pack(fill="x", padx=10, pady=8)
         
@@ -165,7 +173,8 @@ class RegisterView(ctk.CTkFrame):
         self.last_name_container = ctk.CTkFrame(
             self.register_form_frame,
             corner_radius=8,
-            fg_color=("#E0E0E0", "#3c3c3c")  # Light and dark mode colors
+            fg_color=("#E0E0E0", "#3c3c3c"),  # Light and dark mode colors
+            width=190  # Set specific width for container
         )
         self.last_name_container.grid(row=5, column=1, padx=10, pady=(0, 15), sticky="ew")
         
@@ -174,7 +183,8 @@ class RegisterView(ctk.CTkFrame):
             self.last_name_container,
             placeholder_text="Enter your last name",
             border_width=0,
-            fg_color="transparent"
+            fg_color="transparent",
+            width=170  # Set specific width for entry
         )
         self.last_name_entry.pack(fill="x", padx=10, pady=8)
         
@@ -190,7 +200,8 @@ class RegisterView(ctk.CTkFrame):
         self.phone_container = ctk.CTkFrame(
             self.register_form_frame,
             corner_radius=8,
-            fg_color=("#E0E0E0", "#3c3c3c")  # Light and dark mode colors
+            fg_color=("#E0E0E0", "#3c3c3c"),  # Light and dark mode colors
+            width=190  # Set specific width for container
         )
         self.phone_container.grid(row=7, column=0, padx=10, pady=(0, 15), sticky="ew")
         
@@ -199,7 +210,8 @@ class RegisterView(ctk.CTkFrame):
             self.phone_container,
             placeholder_text="Enter your phone number",
             border_width=0,
-            fg_color="transparent"
+            fg_color="transparent",
+            width=170  # Set specific width for entry
         )
         self.phone_entry.pack(fill="x", padx=10, pady=8)
         
@@ -215,7 +227,8 @@ class RegisterView(ctk.CTkFrame):
         self.address_container = ctk.CTkFrame(
             self.register_form_frame,
             corner_radius=8,
-            fg_color=("#E0E0E0", "#3c3c3c")  # Light and dark mode colors
+            fg_color=("#E0E0E0", "#3c3c3c"),  # Light and dark mode colors
+            width=190  # Set specific width for container
         )
         self.address_container.grid(row=7, column=1, padx=10, pady=(0, 15), sticky="ew")
         
@@ -224,7 +237,8 @@ class RegisterView(ctk.CTkFrame):
             self.address_container,
             placeholder_text="Enter your address",
             border_width=0,
-            fg_color="transparent"
+            fg_color="transparent",
+            width=170  # Set specific width for entry
         )
         self.address_entry.pack(fill="x", padx=10, pady=8)
         
@@ -250,7 +264,8 @@ class RegisterView(ctk.CTkFrame):
             command=self.register,
             fg_color="#3a7ebf",
             hover_color="#2b5f8f",
-            corner_radius=8
+            corner_radius=8,
+            width=190  # Set specific width for button
         )
         self.register_button.grid(row=0, column=1, padx=10, pady=0, sticky="e")
         

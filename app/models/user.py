@@ -28,6 +28,27 @@ class User:
         self.email = email
         self.password_hash = password_hash
         self.role_id = role_id
+        
+        # Split name into first_name and last_name if name is provided
+        if name:
+            parts = name.split()
+            if len(parts) >= 2:
+                self._first_name = parts[0]
+                self._last_name = " ".join(parts[1:])
+            else:
+                self._first_name = name
+                self._last_name = ""
+        else:
+            self._first_name = ""
+            self._last_name = ""
+            
+    @property
+    def first_name(self):
+        return self._first_name
+        
+    @property
+    def last_name(self):
+        return self._last_name
 
     @staticmethod
     def get_connection():
@@ -57,12 +78,16 @@ class User:
             user_data = cursor.fetchone()
             
             if user_data:
-                return User(
+                user = User(
                     id=user_data['id'],
                     name=f"{user_data['first_name']} {user_data['last_name']}",
                     email=user_data['email'],
                     role_id=user_data['role_id']
                 )
+                # Explicitly set first_name and last_name
+                user._first_name = user_data['first_name']
+                user._last_name = user_data['last_name']
+                return user
             return None
         except Error as e:
             print(f"Error getting user by email: {e}")
@@ -107,6 +132,9 @@ class User:
                 password_hash=hashed_password.decode('utf-8'),
                 role_id=role_id
             )
+            # Explicitly set first_name and last_name
+            user._first_name = first_name
+            user._last_name = last_name
             
             # Assign the new user to the admin
             admin = User.get_user_by_email("admin@billionnaires.com")
@@ -153,6 +181,9 @@ class User:
                     password_hash=user_data['password_hash'],
                     role_id=user_data['role_id']
                 )
+                # Explicitly set first_name and last_name
+                user._first_name = user_data['first_name']
+                user._last_name = user_data['last_name']
                 return True, user
             else:
                 return False, "Invalid email or password"
@@ -182,12 +213,16 @@ class User:
             user_data = cursor.fetchone()
             
             if user_data:
-                return User(
+                user = User(
                     id=user_data['id'],
                     name=f"{user_data['first_name']} {user_data['last_name']}",
                     email=user_data['email'],
                     role_id=user_data['role_id']
                 )
+                # Explicitly set first_name and last_name
+                user._first_name = user_data['first_name']
+                user._last_name = user_data['last_name']
+                return user
             return None
         except Error as e:
             print(f"Error getting user: {e}")
@@ -295,12 +330,12 @@ class User:
             if first_name is not None:
                 updates.append("first_name = %s")
                 params.append(first_name)
-                self.first_name = first_name
+                self._first_name = first_name
                 
             if last_name is not None:
                 updates.append("last_name = %s")
                 params.append(last_name)
-                self.last_name = last_name
+                self._last_name = last_name
                 
             if phone is not None:
                 updates.append("phone = %s")
