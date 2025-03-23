@@ -148,27 +148,31 @@ class AdminDashboardView(ctk.CTkFrame):
         self.transactions_list_frame.pack(fill="both", expand=True, padx=20, pady=(0, 20))
     
     def update_statistics(self):
-        """Update the statistics cards."""
-        # Get clients assigned to the admin
+        """Update the statistics cards with current data."""
+        # Get all clients assigned to the admin
         clients = User.get_clients_for_admin(self.user.id)
         
-        # Count accounts and transactions
+        # Count of clients
+        clients_count = len(clients)
+        
+        # Count of accounts and transactions
         accounts_count = 0
         transactions_count = 0
         
-        # For each client, get their accounts and count them
+        # For each client, get their accounts and count
         for client in clients:
             # Get accounts for this client
             client_accounts = Account.get_accounts_for_user(client.id)
             accounts_count += len(client_accounts)
             
-            # For each account, get transactions and count them
+            # For each account, get transaction count
             for account in client_accounts:
-                transactions = Transaction.get_transactions_for_account(account.id)
-                transactions_count += len(transactions)
+                # Get transactions for this account
+                account_transactions = Transaction.get_transactions_for_account(account.id)
+                transactions_count += len(account_transactions)
         
-        # Update UI
-        self.clients_count.configure(text=str(len(clients)))
+        # Update the statistics labels
+        self.clients_count.configure(text=str(clients_count))
         self.accounts_count.configure(text=str(accounts_count))
         self.transactions_count.configure(text=str(transactions_count))
     
@@ -273,8 +277,8 @@ class AdminDashboardView(ctk.CTkFrame):
             
             # For each account, get transactions
             for account in client_accounts:
-                # Get transactions for this account
-                transactions = Transaction.get_transactions_for_account(account.id, limit=5)
+                # Get transactions for this account (with details)
+                transactions = Transaction.get_transactions_for_account(account.id, limit=5, include_details=True)
                 
                 # Add client and account info to each transaction
                 for transaction in transactions:
@@ -313,10 +317,11 @@ class AdminDashboardView(ctk.CTkFrame):
             transaction_frame.grid_propagate(False)
             
             # Configure grid
-            transaction_frame.grid_columnconfigure(0, weight=1)
-            transaction_frame.grid_columnconfigure(1, weight=1)
-            transaction_frame.grid_columnconfigure(2, weight=1)
-            transaction_frame.grid_columnconfigure(3, weight=1)
+            transaction_frame.grid_columnconfigure(0, weight=1)  # Date
+            transaction_frame.grid_columnconfigure(1, weight=1)  # Client
+            transaction_frame.grid_columnconfigure(2, weight=1)  # Account
+            transaction_frame.grid_columnconfigure(3, weight=1)  # Amount
+            transaction_frame.grid_columnconfigure(4, weight=2)  # Description
             
             # Format date
             date_str = transaction.transaction_date.strftime("%Y-%m-%d") if transaction.transaction_date else "N/A"
@@ -352,12 +357,26 @@ class AdminDashboardView(ctk.CTkFrame):
             amount_color = "#4CAF50" if transaction.amount >= 0 else "#F44336"
             amount_label = ctk.CTkLabel(
                 transaction_frame,
-                text=f"${transaction.amount:,.2f}",
+                text=f"${abs(transaction.amount):,.2f}",
                 font=ctk.CTkFont(size=12, weight="bold"),
                 text_color=amount_color,
                 anchor="w"
             )
             amount_label.grid(row=0, column=3, sticky="w", padx=10, pady=10)
+            
+            # Description
+            description = transaction.description or "N/A"
+            # Truncate long descriptions
+            if len(description) > 30:
+                description = description[:27] + "..."
+            
+            description_label = ctk.CTkLabel(
+                transaction_frame,
+                text=description,
+                font=ctk.CTkFont(size=12),
+                anchor="w"
+            )
+            description_label.grid(row=0, column=4, sticky="w", padx=10, pady=10)
     
     def refresh_dashboard(self):
         """Refresh all dashboard components."""

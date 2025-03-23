@@ -277,11 +277,51 @@ class AdminTransactionsView(ctk.CTkFrame):
             except:
                 pass
         
-        # This would get transactions from the database based on filters
-        # For now, we'll display a placeholder
-        transactions = []  # This would come from a database query
+        # Get clients assigned to the admin
+        clients = User.get_clients_for_admin(self.user.id)
         
-        if not transactions:
+        # Collect all transactions based on filters
+        all_transactions = []
+        client_details = {}  # Map client ID to client name
+        
+        # For each client, get their accounts and transactions
+        for client in clients:
+            # Skip if filtering by client and this isn't the selected client
+            if client_id is not None and client.id != client_id:
+                continue
+            
+            # Store client name for later use
+            client_details[client.id] = f"{client.first_name} {client.last_name}"
+            
+            # Get accounts for this client
+            client_accounts = Account.get_accounts_for_user(client.id)
+            
+            # For each account, get transactions
+            for account in client_accounts:
+                # Skip if filtering by account and this isn't the selected account
+                if account_id is not None and account.id != account_id:
+                    continue
+                
+                # Get transactions for this account with filters
+                transactions = Transaction.get_transactions_for_account(
+                    account.id, 
+                    limit=100,
+                    start_date=from_date,
+                    end_date=to_date,
+                    transaction_type=transaction_type,
+                    include_details=True
+                )
+                
+                # Add client and account info to each transaction
+                for transaction in transactions:
+                    transaction.client_id = client.id
+                    transaction.client_name = client_details[client.id]
+                    all_transactions.append(transaction)
+        
+        # Sort transactions by date (newest first)
+        all_transactions.sort(key=lambda x: x.transaction_date if x.transaction_date else datetime.now(), reverse=True)
+        
+        if not all_transactions:
             no_transactions_label = ctk.CTkLabel(
                 self.table_content,
                 text="No transactions found for the selected filters",
@@ -292,7 +332,7 @@ class AdminTransactionsView(ctk.CTkFrame):
             return
         
         # Add each transaction
-        for i, transaction in enumerate(transactions):
+        for i, transaction in enumerate(all_transactions):
             # Row frame with alternating background
             row_bg = ("gray90", "gray20") if i % 2 == 0 else ("gray85", "gray17")
             row_frame = ctk.CTkFrame(self.table_content, fg_color=row_bg, corner_radius=0, height=50)
@@ -313,7 +353,7 @@ class AdminTransactionsView(ctk.CTkFrame):
             id_label.grid(row=0, column=0, sticky="w", padx=10, pady=10)
             
             # Date
-            date_str = transaction.date.strftime("%Y-%m-%d")
+            date_str = transaction.transaction_date.strftime("%Y-%m-%d") if transaction.transaction_date else "N/A"
             date_label = ctk.CTkLabel(
                 row_frame,
                 text=date_str,
@@ -343,15 +383,15 @@ class AdminTransactionsView(ctk.CTkFrame):
             # Category
             category_label = ctk.CTkLabel(
                 row_frame,
-                text=transaction.category,
+                text=transaction.category_name if hasattr(transaction, 'category_name') else "",
                 font=ctk.CTkFont(size=12),
                 anchor="w"
             )
             category_label.grid(row=0, column=4, sticky="w", padx=10, pady=10)
             
             # Amount
-            amount_color = "#4CAF50" if transaction.type == "income" else "#F44336"
-            amount_text = f"${transaction.amount:,.2f}"
+            amount_color = "#4CAF50" if transaction.amount >= 0 else "#F44336"
+            amount_text = f"${abs(transaction.amount):,.2f}"
             amount_label = ctk.CTkLabel(
                 row_frame,
                 text=amount_text,
@@ -362,13 +402,13 @@ class AdminTransactionsView(ctk.CTkFrame):
             amount_label.grid(row=0, column=5, sticky="w", padx=10, pady=10)
             
             # Type
-            type_bg = {"income": "#4CAF50", "expense": "#F44336", "transfer": "#2196F3"}
-            type_frame = ctk.CTkFrame(row_frame, fg_color=type_bg.get(transaction.type, "gray"))
+            type_bg = {"deposit": "#4CAF50", "withdrawal": "#F44336", "transfer": "#2196F3"}
+            type_frame = ctk.CTkFrame(row_frame, fg_color=type_bg.get(transaction.transaction_type, "gray"))
             type_frame.grid(row=0, column=6, sticky="w", padx=10, pady=5)
             
             type_label = ctk.CTkLabel(
                 type_frame,
-                text=transaction.type.capitalize(),
+                text=transaction.transaction_type.capitalize(),
                 font=ctk.CTkFont(size=12),
                 text_color="white",
                 anchor="center"
@@ -379,7 +419,7 @@ class AdminTransactionsView(ctk.CTkFrame):
             action_frame = ctk.CTkFrame(row_frame, fg_color="transparent")
             action_frame.grid(row=0, column=7, sticky="ew", padx=10, pady=5)
             
-            # View details button
+            # View button
             view_btn = ctk.CTkButton(
                 action_frame,
                 text="View",
@@ -388,11 +428,11 @@ class AdminTransactionsView(ctk.CTkFrame):
                 height=25,
                 fg_color="#2196F3",
                 hover_color="#1976D2",
-                command=lambda id=transaction.id: self.view_transaction(id)
+                command=lambda transaction_id=transaction.id: self.view_transaction(transaction_id)
             )
             view_btn.pack(side="left", padx=(0, 5))
             
-            # Flag button (example of an admin action)
+            # Flag button
             flag_btn = ctk.CTkButton(
                 action_frame,
                 text="Flag",
@@ -401,7 +441,7 @@ class AdminTransactionsView(ctk.CTkFrame):
                 height=25,
                 fg_color="#FF9800",
                 hover_color="#F57C00",
-                command=lambda id=transaction.id: self.flag_transaction(id)
+                command=lambda transaction_id=transaction.id: self.flag_transaction(transaction_id)
             )
             flag_btn.pack(side="left", padx=5)
     
