@@ -14,6 +14,7 @@ from app.views.accounts_view import AccountsView
 from app.views.transactions_view import TransactionsView
 from app.views.analytics_view import AnalyticsView
 from app.views.settings_view import SettingsView
+from app.views.admin_view import AdminView
 
 # Import models
 from app.models.user import User
@@ -76,9 +77,14 @@ class MainApp(ctk.CTk):
             # Store the user object
             self.current_user = result
             
-            # Now show the main application with sidebar
-            self.create_sidebar()
-            self.show_view("dashboard")
+            # Check if the user is an admin
+            if self.current_user.is_admin():
+                # Show the admin interface
+                self.show_admin_interface()
+            else:
+                # Show the client interface
+                self.create_sidebar()
+                self.show_view("dashboard")
             
             return True, "Login successful"
         else:
@@ -94,7 +100,7 @@ class MainApp(ctk.CTk):
             # Store the user object
             self.current_user = result
             
-            # Create sidebar and show dashboard
+            # Create sidebar and show dashboard (clients only)
             self.create_sidebar()
             self.show_view("dashboard")
             
@@ -102,6 +108,14 @@ class MainApp(ctk.CTk):
         else:
             # Return the error message from user creation
             return False, result
+            
+    def show_admin_interface(self):
+        """Show the admin interface."""
+        self.clear_current_view()
+        
+        # Create the admin view
+        self.current_view = AdminView(self, self.current_user)
+        self.current_view.grid(row=0, column=0, sticky="nsew", columnspan=2)
 
     def create_sidebar(self):
         """Create the sidebar with navigation buttons."""
@@ -228,6 +242,13 @@ class MainApp(ctk.CTk):
             "analytics": self.analytics_btn,
             "settings": self.settings_btn
         }
+        
+        # Reset all buttons
+        for button in all_buttons.values():
+            button.configure(
+                fg_color="transparent",
+                text_color=("gray10", "#DCE4EE")
+            )
         
         # Set active button
         if active_view in all_buttons:

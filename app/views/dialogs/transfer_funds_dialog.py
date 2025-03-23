@@ -226,7 +226,12 @@ class TransferFundsDialog(ctk.CTkToplevel):
                 
             # Get amount
             try:
-                amount = Decimal(self.amount_entry.get())
+                amount_text = self.amount_entry.get().strip()
+                if not amount_text:
+                    self.show_error("Please enter an amount")
+                    return
+                
+                amount = Decimal(amount_text)
                 if amount <= 0:
                     self.show_error("Amount must be greater than 0")
                     return
@@ -357,4 +362,21 @@ class TransferFundsDialog(ctk.CTkToplevel):
     
     def close(self):
         """Close the dialog."""
-        self.destroy() 
+        self.destroy()
+    
+    def set_preselected_account(self, account_id):
+        """Pre-select an account in the from-account dropdown by ID."""
+        if not self.accounts:
+            return
+            
+        # Find the account in the list
+        for i, acc in enumerate(self.accounts):
+            if acc.id == account_id:
+                # Set the dropdown value to this account
+                account_text = f"{acc.account_name} (${acc.balance:,.2f})"
+                self.from_account_var.set(account_text)
+                self.from_account_menu.set(account_text)
+                
+                # Update to-account options
+                self.update_to_account_options(account_text)
+                break 

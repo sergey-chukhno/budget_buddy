@@ -54,6 +54,11 @@ class Account:
                         cursor.close()
                         connection.close()
         return self._account_type_name
+        
+    @account_type_name.setter
+    def account_type_name(self, value):
+        """Set the account type name."""
+        self._account_type_name = value
 
     @staticmethod
     def get_connection():

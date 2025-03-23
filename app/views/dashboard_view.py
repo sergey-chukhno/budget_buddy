@@ -208,16 +208,10 @@ class DashboardView(ctk.CTkFrame):
             no_transactions_label.pack(pady=20)
             return
         
-        # Define column widths
-        col_widths = [150, 150, 120, 120, 180]
-        
         # Create header
-        header_frame = ctk.CTkFrame(self.transactions_list_frame, fg_color=("gray90", "gray25"))
+        header_frame = ctk.CTkFrame(self.transactions_list_frame, fg_color="transparent")
         header_frame.pack(fill="x", pady=(0, 5))
-        
-        # Configure header columns with fixed widths
-        for i in range(5):
-            header_frame.grid_columnconfigure(i, weight=1, minsize=col_widths[i])
+        header_frame.grid_columnconfigure((0, 1, 2, 3, 4), weight=1)
         
         # Header labels
         header_labels = ["Date", "Account", "Category", "Amount", "Type"]
@@ -225,23 +219,15 @@ class DashboardView(ctk.CTkFrame):
             header_label = ctk.CTkLabel(
                 header_frame,
                 text=label_text,
-                font=ctk.CTkFont(size=12, weight="bold"),
-                anchor="w",
-                width=col_widths[i]
+                font=ctk.CTkFont(size=12, weight="bold")
             )
-            header_label.grid(row=0, column=i, sticky="w", padx=5, pady=5)
+            header_label.grid(row=0, column=i, sticky="w", padx=5)
         
         # Add each transaction
         for i, transaction in enumerate(transactions):
-            # Create row with alternating background color
-            row_bg = ("gray90", "gray20") if i % 2 == 0 else ("gray85", "gray17")
-            transaction_frame = ctk.CTkFrame(self.transactions_list_frame, fg_color=row_bg, corner_radius=0, height=40)
-            transaction_frame.pack(fill="x", pady=(0, 1))
-            transaction_frame.grid_propagate(False)  # Fix the height
-            
-            # Configure row columns with fixed widths
-            for j in range(5):
-                transaction_frame.grid_columnconfigure(j, weight=1, minsize=col_widths[j])
+            transaction_frame = ctk.CTkFrame(self.transactions_list_frame, fg_color="transparent")
+            transaction_frame.pack(fill="x", pady=2)
+            transaction_frame.grid_columnconfigure((0, 1, 2, 3, 4), weight=1)
             
             # Format date
             date_str = transaction.transaction_date.strftime("%Y-%m-%d %H:%M")
@@ -270,73 +256,46 @@ class DashboardView(ctk.CTkFrame):
             
             type_text = transaction_type_map.get(transaction.transaction_type, transaction.transaction_type)
             
-            # Get type color based on transaction type
-            def get_type_color(transaction_type):
-                if transaction_type == "deposit":
-                    return "#4CAF50"  # Green
-                elif transaction_type == "withdrawal":
-                    return "#F44336"  # Red
-                elif transaction_type == "transfer":
-                    return "#2196F3"  # Blue
-                elif transaction_type == "external_transfer":
-                    return "#FF9800"  # Orange
-                else:
-                    return "#9E9E9E"  # Gray
-            
             # Data cells
             date_label = ctk.CTkLabel(
                 transaction_frame,
                 text=date_str,
-                font=ctk.CTkFont(size=12),
-                anchor="w",
-                width=col_widths[0]
+                font=ctk.CTkFont(size=12)
             )
-            date_label.grid(row=0, column=0, sticky="w", padx=5, pady=8)
+            date_label.grid(row=0, column=0, sticky="w", padx=5, pady=3)
             
             account_label = ctk.CTkLabel(
                 transaction_frame,
                 text=transaction.account_name or "Unknown",
-                font=ctk.CTkFont(size=12),
-                anchor="w",
-                width=col_widths[1]
+                font=ctk.CTkFont(size=12)
             )
-            account_label.grid(row=0, column=1, sticky="w", padx=5, pady=8)
+            account_label.grid(row=0, column=1, sticky="w", padx=5, pady=3)
             
             category_label = ctk.CTkLabel(
                 transaction_frame,
                 text=transaction.category_name or "N/A",
-                font=ctk.CTkFont(size=12),
-                anchor="w",
-                width=col_widths[2]
+                font=ctk.CTkFont(size=12)
             )
-            category_label.grid(row=0, column=2, sticky="w", padx=5, pady=8)
+            category_label.grid(row=0, column=2, sticky="w", padx=5, pady=3)
             
             amount_label = ctk.CTkLabel(
                 transaction_frame,
                 text=amount_text,
-                font=ctk.CTkFont(size=12, weight="bold"),
-                text_color=amount_color,
-                anchor="e",
-                width=col_widths[3]
+                font=ctk.CTkFont(size=12),
+                text_color=amount_color
             )
-            amount_label.grid(row=0, column=3, sticky="e", padx=5, pady=8)
-            
-            # Type with styled background
-            type_frame = ctk.CTkFrame(
-                transaction_frame, 
-                fg_color=get_type_color(transaction.transaction_type), 
-                corner_radius=8
-            )
-            type_frame.grid(row=0, column=4, padx=5, pady=4, sticky="w")
+            amount_label.grid(row=0, column=3, sticky="w", padx=5, pady=3)
             
             type_label = ctk.CTkLabel(
-                type_frame,
+                transaction_frame,
                 text=type_text,
-                font=ctk.CTkFont(size=12, weight="bold"),
-                text_color="white",
-                corner_radius=8
+                font=ctk.CTkFont(size=12)
             )
-            type_label.grid(row=0, column=0, padx=8, pady=2)
+            type_label.grid(row=0, column=4, sticky="w", padx=5, pady=3)
+            
+            # Add a separator
+            separator = ctk.CTkFrame(self.transactions_list_frame, height=1, fg_color="gray75")
+            separator.pack(fill="x", pady=(3, 0))
     
     def refresh_dashboard(self):
         """Refresh all dashboard components."""

@@ -259,6 +259,9 @@ class User:
                     name=f"{client_data['first_name']} {client_data['last_name']}",
                     role_id=client_data['role_id']
                 )
+                # Set first_name and last_name attributes
+                client._first_name = client_data['first_name']
+                client._last_name = client_data['last_name']
                 clients.append(client)
             
             return clients

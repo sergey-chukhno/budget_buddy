@@ -115,9 +115,21 @@ class AddFundsDialog(ctk.CTkToplevel):
         self.categories = Category.get_categories_by_type(self.user.id, "income")
         self.category_var = ctk.StringVar()
         
+        # Handle case where no categories are found
+        category_options = [cat.category_name for cat in self.categories]
+        if not category_options:
+            # Create a default category if none exists
+            category_options = ["Deposit"]
+            
+            # Set a default category
+            self.category_var.set(category_options[0])
+        else:
+            # Set the first category as default
+            self.category_var.set(category_options[0])
+        
         self.category_menu = ctk.CTkOptionMenu(
             category_frame,
-            values=[cat.category_name for cat in self.categories],
+            values=category_options,
             variable=self.category_var,
             width=300
         )
@@ -185,11 +197,16 @@ class AddFundsDialog(ctk.CTkToplevel):
             
             # Get amount
             try:
-                amount = Decimal(self.amount_entry.get())
+                amount_text = self.amount_entry.get().strip()
+                if not amount_text:
+                    self.show_error("Please enter an amount")
+                    return
+                
+                amount = Decimal(amount_text)
                 if amount <= 0:
                     self.show_error("Amount must be greater than 0")
                     return
-            except (ValueError, TypeError):
+            except (ValueError, TypeError, Decimal.InvalidOperation):
                 self.show_error("Please enter a valid amount")
                 return
             
@@ -206,9 +223,18 @@ class AddFundsDialog(ctk.CTkToplevel):
                     category = cat
                     break
             
-            if not category:
-                self.show_error("Invalid category selection")
-                return
+            # If no matching category found but we have a default category name
+            if not category and selected_category == "Deposit":
+                # Need to create or fetch a default income category
+                success, message_or_id = Category.create_category("Deposit", False, None, None, None)
+                if success:
+                    # If creation was successful, get the category
+                    category = Category.get_by_id(message_or_id)
+                
+                # If still no category, show error
+                if not category:
+                    self.show_error("Could not find or create a valid category")
+                    return
             
             # Get description
             description = self.description_entry.get().strip()
@@ -325,4 +351,18 @@ class AddFundsDialog(ctk.CTkToplevel):
     
     def close(self):
         """Close the dialog."""
-        self.destroy() 
+        self.destroy()
+    
+    def set_preselected_account(self, account_id):
+        """Pre-select an account in the dropdown by ID."""
+        if not self.accounts:
+            return
+            
+        # Find the account in the list
+        for i, acc in enumerate(self.accounts):
+            if acc.id == account_id:
+                # Set the dropdown value to this account
+                account_text = f"{acc.account_name} (${acc.balance:,.2f})"
+                self.account_var.set(account_text)
+                self.account_menu.set(account_text)
+                break 
