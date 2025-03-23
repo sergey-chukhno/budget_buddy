@@ -40,18 +40,37 @@ class AdminView(ctk.CTkFrame):
     def create_sidebar(self):
         # Create sidebar frame
         sidebar_frame = ctk.CTkFrame(self, width=200, corner_radius=0)
-        sidebar_frame.grid_rowconfigure(6, weight=1)  # Push logout button to the bottom
+        sidebar_frame.grid_rowconfigure(8, weight=1)  # Push logout button to the bottom
         
         # Logo
         image_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "resources", "images", "logo.png")
         
         try:
+            # Load and prepare the logo image
             logo_img = Image.open(image_path)
-            logo = ctk.CTkImage(light_image=logo_img, dark_image=logo_img, size=(120, 120))
+            
+            # Make the logo circular by creating a circular mask
+            # Resize to a square first
+            size = min(logo_img.width, logo_img.height)
+            logo_img = logo_img.resize((size, size))
+            
+            # Create a circular mask
+            mask = Image.new('L', (size, size), 0)
+            from PIL import ImageDraw
+            draw = ImageDraw.Draw(mask)
+            draw.ellipse((0, 0, size, size), fill=255)
+            
+            # Create a new image with transparent background
+            circular_img = Image.new('RGBA', (size, size), (0, 0, 0, 0))
+            circular_img.paste(logo_img, (0, 0), mask)
+            
+            # Create CTkImage
+            logo = ctk.CTkImage(light_image=circular_img, dark_image=circular_img, size=(120, 120))
             
             logo_label = ctk.CTkLabel(sidebar_frame, image=logo, text="")
             logo_label.grid(row=0, column=0, padx=20, pady=(20, 10))
-        except:
+        except Exception as e:
+            print(f"Error loading logo: {e}")
             # Fallback if logo image is not found
             logo_label = ctk.CTkLabel(sidebar_frame, text="Admin Panel", font=ctk.CTkFont(size=20, weight="bold"))
             logo_label.grid(row=0, column=0, padx=20, pady=(20, 10))
@@ -89,7 +108,7 @@ class AdminView(ctk.CTkFrame):
         nav_label = ctk.CTkLabel(sidebar_frame, text="NAVIGATION", font=ctk.CTkFont(size=12, weight="bold"))
         nav_label.grid(row=2, column=0, padx=20, pady=(10, 0), sticky="w")
         
-        # Navigation buttons
+        # Navigation buttons - arranged together
         self.dashboard_button = ctk.CTkButton(
             sidebar_frame, 
             text="Dashboard",
@@ -120,6 +139,7 @@ class AdminView(ctk.CTkFrame):
         )
         self.accounts_button.grid(row=5, column=0, padx=(15, 10), pady=(5, 0), sticky="ew")
         
+        # Moved up to be with other navigation buttons
         self.transactions_button = ctk.CTkButton(
             sidebar_frame, 
             text="Transactions",
@@ -130,6 +150,7 @@ class AdminView(ctk.CTkFrame):
         )
         self.transactions_button.grid(row=6, column=0, padx=(15, 10), pady=(5, 0), sticky="ew")
         
+        # Moved up to be with other navigation buttons
         self.settings_button = ctk.CTkButton(
             sidebar_frame, 
             text="Settings",
@@ -138,7 +159,7 @@ class AdminView(ctk.CTkFrame):
             anchor="w",
             command=lambda: self.show_view("settings")
         )
-        self.settings_button.grid(row=7, column=0, padx=(15, 10), pady=(5, 20), sticky="ew")
+        self.settings_button.grid(row=7, column=0, padx=(15, 10), pady=(5, 0), sticky="ew")
         
         # Logout button (at the bottom)
         self.logout_button = ctk.CTkButton(
@@ -148,7 +169,7 @@ class AdminView(ctk.CTkFrame):
             hover_color="#D32F2F",
             command=self.logout
         )
-        self.logout_button.grid(row=8, column=0, padx=20, pady=(10, 20), sticky="ew")
+        self.logout_button.grid(row=9, column=0, padx=20, pady=(10, 20), sticky="ew")
         
         return sidebar_frame
     
