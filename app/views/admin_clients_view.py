@@ -17,11 +17,11 @@ class AdminClientsView(ctk.CTkFrame):
         
         # Set up grid layout
         self.grid_columnconfigure(0, weight=1)
-        self.grid_rowconfigure(1, weight=1)
+        self.grid_rowconfigure(2, weight=1)  # Changed to give weight to clients_frame (now row 2)
         
         # Header
         self.header_frame = ctk.CTkFrame(self, fg_color="transparent")
-        self.header_frame.grid(row=0, column=0, padx=20, pady=(20, 10), sticky="ew")
+        self.header_frame.grid(row=0, column=0, padx=20, pady=(10, 5), sticky="ew")  # Reduced bottom padding
         self.header_frame.grid_columnconfigure(0, weight=1)
         self.header_frame.grid_columnconfigure(1, weight=0)
         
@@ -40,16 +40,16 @@ class AdminClientsView(ctk.CTkFrame):
         )
         self.add_client_btn.grid(row=0, column=1, padx=10)
         
-        # Search frame
+        # Search frame - moved up (row 1)
         self.search_frame = ctk.CTkFrame(self)
-        self.search_frame.grid(row=1, column=0, padx=20, pady=(0, 10), sticky="ew")
+        self.search_frame.grid(row=1, column=0, padx=20, pady=(0, 5), sticky="ew")  # Reduced bottom padding
         
         self.search_entry = ctk.CTkEntry(
             self.search_frame,
             placeholder_text="Search clients...",
             width=300
         )
-        self.search_entry.pack(side="left", padx=(20, 10), pady=10)
+        self.search_entry.pack(side="left", padx=(20, 10), pady=8)  # Reduced vertical padding
         
         self.search_btn = ctk.CTkButton(
             self.search_frame,
@@ -57,9 +57,9 @@ class AdminClientsView(ctk.CTkFrame):
             width=100,
             command=self.search_clients
         )
-        self.search_btn.pack(side="left", padx=10, pady=10)
+        self.search_btn.pack(side="left", padx=10, pady=8)  # Reduced vertical padding
         
-        # Clients list
+        # Clients list - moved to row 2, immediately after search
         self.clients_frame = ctk.CTkFrame(self)
         self.clients_frame.grid(row=2, column=0, padx=20, pady=(0, 20), sticky="nsew")
         self.clients_frame.grid_columnconfigure(0, weight=1)
@@ -75,9 +75,9 @@ class AdminClientsView(ctk.CTkFrame):
         # Column widths
         col_widths = [80, 150, 150, 200, 120, 200]
         
-        # Table header
-        header_frame = ctk.CTkFrame(self.clients_frame, fg_color=("gray90", "gray25"))
-        header_frame.pack(fill="x", pady=(0, 2))
+        # Table header - improved styling
+        header_frame = ctk.CTkFrame(self.clients_frame, fg_color=("gray85", "gray28"), corner_radius=6)
+        header_frame.pack(fill="x", pady=(0, 1))
         
         # Configure header columns
         for i in range(6):
@@ -89,14 +89,18 @@ class AdminClientsView(ctk.CTkFrame):
             header_label = ctk.CTkLabel(
                 header_frame,
                 text=label_text,
-                font=ctk.CTkFont(size=12, weight="bold"),
+                font=ctk.CTkFont(size=13, weight="bold"),
                 anchor="w"
             )
-            header_label.grid(row=0, column=i, sticky="w", padx=10, pady=10)
+            header_label.grid(row=0, column=i, sticky="w", padx=10, pady=8)  # Reduced padding
         
-        # Scrollable frame for the table content
-        self.table_content = ctk.CTkScrollableFrame(self.clients_frame, fg_color="transparent")
-        self.table_content.pack(fill="both", expand=True, padx=0, pady=0)
+        # Scrollable frame for the table content with improved styling
+        self.table_content = ctk.CTkScrollableFrame(
+            self.clients_frame, 
+            fg_color="transparent",
+            corner_radius=6
+        )
+        self.table_content.pack(fill="both", expand=True, padx=0, pady=2)  # Added small vertical padding
         
         # Configure content frame
         self.table_content.grid_columnconfigure(0, weight=1)
@@ -125,9 +129,14 @@ class AdminClientsView(ctk.CTkFrame):
         
         # Add each client
         for i, client in enumerate(clients):
-            # Row frame with alternating background
-            row_bg = ("gray90", "gray20") if i % 2 == 0 else ("gray85", "gray17")
-            row_frame = ctk.CTkFrame(self.table_content, fg_color=row_bg, corner_radius=0, height=50)
+            # Row frame with alternating background and improved styling
+            row_bg = ("gray95", "gray22") if i % 2 == 0 else ("gray90", "gray19")
+            row_frame = ctk.CTkFrame(
+                self.table_content, 
+                fg_color=row_bg, 
+                corner_radius=4,
+                height=45  # Slightly smaller height
+            )
             row_frame.pack(fill="x", pady=(0, 1))
             row_frame.grid_propagate(False)
             
@@ -142,7 +151,7 @@ class AdminClientsView(ctk.CTkFrame):
                 font=ctk.CTkFont(size=12),
                 anchor="w"
             )
-            id_label.grid(row=0, column=0, sticky="w", padx=10, pady=10)
+            id_label.grid(row=0, column=0, sticky="w", padx=10, pady=8)  # Reduced padding
             
             # First Name
             first_name_label = ctk.CTkLabel(
@@ -151,7 +160,7 @@ class AdminClientsView(ctk.CTkFrame):
                 font=ctk.CTkFont(size=12),
                 anchor="w"
             )
-            first_name_label.grid(row=0, column=1, sticky="w", padx=10, pady=10)
+            first_name_label.grid(row=0, column=1, sticky="w", padx=10, pady=8)  # Reduced padding
             
             # Last Name
             last_name_label = ctk.CTkLabel(
@@ -160,7 +169,7 @@ class AdminClientsView(ctk.CTkFrame):
                 font=ctk.CTkFont(size=12),
                 anchor="w"
             )
-            last_name_label.grid(row=0, column=2, sticky="w", padx=10, pady=10)
+            last_name_label.grid(row=0, column=2, sticky="w", padx=10, pady=8)
             
             # Email
             email_label = ctk.CTkLabel(
@@ -169,7 +178,7 @@ class AdminClientsView(ctk.CTkFrame):
                 font=ctk.CTkFont(size=12),
                 anchor="w"
             )
-            email_label.grid(row=0, column=3, sticky="w", padx=10, pady=10)
+            email_label.grid(row=0, column=3, sticky="w", padx=10, pady=8)
             
             # Phone (would need to be added to the User model)
             phone_label = ctk.CTkLabel(
@@ -178,50 +187,53 @@ class AdminClientsView(ctk.CTkFrame):
                 font=ctk.CTkFont(size=12),
                 anchor="w"
             )
-            phone_label.grid(row=0, column=4, sticky="w", padx=10, pady=10)
+            phone_label.grid(row=0, column=4, sticky="w", padx=10, pady=8)
             
             # Action buttons frame
             action_frame = ctk.CTkFrame(row_frame, fg_color="transparent")
-            action_frame.grid(row=0, column=5, sticky="ew", padx=10, pady=5)
+            action_frame.grid(row=0, column=5, sticky="ew", padx=10, pady=8)
             
             # View button
             view_btn = ctk.CTkButton(
                 action_frame,
                 text="View",
                 font=ctk.CTkFont(size=12),
-                width=60,
-                height=25,
+                width=55,
+                height=24,
+                corner_radius=6,
                 fg_color="#4CAF50",
                 hover_color="#388E3C",
                 command=lambda client_id=client.id: self.view_client(client_id)
             )
-            view_btn.pack(side="left", padx=(0, 5))
+            view_btn.pack(side="left", padx=(0, 4))
             
             # Edit button
             edit_btn = ctk.CTkButton(
                 action_frame,
                 text="Edit",
                 font=ctk.CTkFont(size=12),
-                width=60,
-                height=25,
+                width=55,
+                height=24,
+                corner_radius=6,
                 fg_color="#2196F3",
                 hover_color="#1976D2",
                 command=lambda client_id=client.id: self.edit_client(client_id)
             )
-            edit_btn.pack(side="left", padx=5)
+            edit_btn.pack(side="left", padx=4)
             
             # Delete button
             delete_btn = ctk.CTkButton(
                 action_frame,
                 text="Delete",
                 font=ctk.CTkFont(size=12),
-                width=60,
-                height=25,
+                width=55,
+                height=24,
+                corner_radius=6,
                 fg_color="#F44336",
                 hover_color="#D32F2F",
                 command=lambda client_id=client.id: self.delete_client(client_id)
             )
-            delete_btn.pack(side="left", padx=5)
+            delete_btn.pack(side="left", padx=4)
     
     def add_client(self):
         """Open a dialog to add a new client."""
